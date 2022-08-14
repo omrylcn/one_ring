@@ -2,24 +2,30 @@ from tensorflow.keras.layers import Layer, Activation, BatchNormalization, Conv2
 
 
 class ResidualLayer(Layer):
-    def __init__(self, n_filter, kernel_size: int = 3, activation: str = "relu", padding: str = "same"):
-        super().__init__()
+    def __init__(self, n_filter, kernel_size=3, activation="relu", padding="same", name="residual"):
+        super().__init__(name=name)
         assert n_filter is not None, "n_filter must be specified"
 
-        self.activation = Activation(activation)
+        self.activation_name = activation
+        self.n_filter = n_filter
+        self.kernel_size = kernel_size
+        self.padding = padding
 
-        self.conv1 = Conv2D(filters=n_filter, kernel_size=kernel_size, padding=padding)
+    def build(self, input_shape):
+        self.activation = Activation(self.activation_name)
+
+        self.conv1 = Conv2D(filters=self.n_filter, kernel_size=self.kernel_size, padding=self.padding)
         self.batch_norm1 = BatchNormalization()
 
-        self.conv2 = Conv2D(filters=n_filter, kernel_size=kernel_size, padding=padding)
+        self.conv2 = Conv2D(filters=self.n_filter, kernel_size=self.kernel_size, padding=self.padding)
         self.batch_norm2 = BatchNormalization()
 
-        self.conv_skip = Conv2D(filters=n_filter, kernel_size=(1, 1), padding=padding)
+        self.conv_skip = Conv2D(filters=self.n_filter, kernel_size=(1, 1), padding=self.padding)
         self.batch_norm_skip = BatchNormalization()
 
         self.add = Add()
 
-    def __call__(self, inputs):
+    def call(self, inputs):
 
         x = self.batch_norm1(inputs)
         x = self.activation(x)
