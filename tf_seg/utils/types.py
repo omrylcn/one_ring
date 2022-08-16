@@ -12,15 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Types for typing functions signatures."""
+"""Types for typing functions signatures.
+
+# Check more types for :
+- https://github.com/tensorflow/agents/blob/v0.13.0/tf_agents/typing/types.py
+
+"""
 
 from typing import Union, Callable, List
 
 import importlib
 import numpy as np
 import tensorflow as tf
+from tensorflow import python
 
-from ten
+
 
 # TODO: Remove once https://github.com/tensorflow/tensorflow/issues/44613 is resolved
 if tf.__version__[:3] > "2.5":
@@ -71,8 +77,8 @@ AcceptableDTypes = Union[tf.DType, np.dtype, type, int, str, None]
 
 
 Tensor = Union[
-    tf.python.framework.ops.Tensor,
-    tf.python.framework.sparse_tensor.SparseTensor,
-    tf.python.ops.ragged.ragged_tensor.RaggedTensor,
-    tf.python.framework.ops.EagerTensor
+    python.framework.ops.Tensor,
+    python.framework.sparse_tensor.SparseTensor,
+    python.ops.ragged.ragged_tensor.RaggedTensor,
+    python.framework.ops.EagerTensor
 ]
