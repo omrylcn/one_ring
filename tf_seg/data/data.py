@@ -176,7 +176,7 @@ class DataLoader(object):
         """
         Maps the data into a TensorFlow Dataset object.
         """
-      
+
         return tf.py_function(self._sequnce_function, [image_path, mask_path], [self.output_type[0], self.output_type[1]])
 
     def _create_sequence(self):
