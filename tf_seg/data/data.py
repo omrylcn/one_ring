@@ -179,10 +179,16 @@ class DataLoader(object):
 
         return tf.py_function(self._sequnce_function, [image_path, mask_path], [self.output_type[0], self.output_type[1]])
 
-    def _create_sequence(self):
+    def _create_sequence(self, transform_func):
         def _sequnce_function(image_path, mask_path):
             image, mask = self._parse_data(image_path, mask_path)
+
+            # print(image.dtype, mask.dtype)
             # print("0image shape :",image.shape)
+
+            if transform_func:
+                image, mask = transform_func(image, mask)
+                # print("tr",image.dtype, mask.dtype)
 
             if self.one_hot_encoding:
                 if self.palette is None:
@@ -191,15 +197,16 @@ class DataLoader(object):
                                     please specify one when initializing the loader."
                     )
                 image, mask = self._one_hot_encode(image, mask)
+                # print("ht",image.dtype, mask.dtype)
 
-            image, mask = self._resize_data(image, mask)
+            # image, mask = self._resize_data(image, mask)
             # print("1image shape :",image.shape)
 
             return image, mask
 
-        return _sequnce_function
+        self._sequnce_function = _sequnce_function
 
-    def load_data(self, batch_size: int, shuffle: bool = True) -> tf.data.Dataset:
+    def load_data(self, batch_size: int = None, shuffle: bool = True, transform_func: callable = None) -> tf.data.Dataset:
         """
         Loads the data into a TensorFlow Dataset object.
         Parameters
@@ -217,13 +224,16 @@ class DataLoader(object):
 
         """
 
-        self._sequnce_function = self._create_sequence()
-
         dataset = tf.data.Dataset.from_tensor_slices((self.image_paths, self.mask_paths))
         if shuffle:
             dataset = dataset.shuffle(buffer_size=len(self.image_paths), seed=self.seed)
 
+        # create sequence function
+        self._create_sequence(transform_func)
+
         dataset = dataset.map(self._map_fucntion, num_parallel_calls=AUTOTUNE)
-        # dataset = dataset.batch(batch_size)
+
+        if batch_size:
+            dataset = dataset.batch(batch_size)
         # dataset = dataset.prefetch(buffer_size=AUTOTUNE)
         return dataset
