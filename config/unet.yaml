@@ -28,6 +28,7 @@ model:
   backbone: null 
   pre_trained: false
   n_filters:  [16, 32, 64, 128, 256]
+  input_shape: [512, 512, 3]
   final_activation: sigmoid
        
 compile:

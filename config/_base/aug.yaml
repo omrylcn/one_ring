@@ -1,4 +1,4 @@
-load_style: file # or module
+#load_style: file # or module # it find automatically
 aug_type: albumentations
 train: # if load_style is modeule, get function from like this => aug.test:transforms
   resize: { height: 300, width: 300 }
