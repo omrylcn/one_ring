@@ -2,15 +2,52 @@ from typing import Tuple, List
 from tensorflow.keras.layers import Conv2DTranspose, Concatenate, Conv2D, BatchNormalization, Activation, MaxPooling2D, Input
 from tensorflow.keras import Model
 
-
+#TODO: add backbone and pretrained weights
 class Unet:
-    def __init__(self, input_shape: Tuple = (512, 512, 3), n_filters: List[int] = [16, 32, 64, 128, 256], final_activation: str = "sigmoid"):
+    """Vanialla UNet implementation"""
+
+    def __init__(self, input_shape: Tuple = (512, 512, 3), n_filters: List[int] = [16, 32, 64, 128, 256],
+                 activation: str = "relu", final_activation: str = "sigmoid", backbone: str = None,pretrained: bool = False):
+
+        """Unet constructor.
+
+        Parameters
+        ----------
+        input_shape : Tuple
+            Shape of the input image.
+        n_filters : List[int]
+            Number of filters in each convolutional layer.
+        activation : str
+            Activation function to use.
+        final_activation : str
+            Activation function to use for the final layer.
+        backbone : str
+            Backbone to use.
+        pretrained : bool
+            Whether to use pretrained weights.
+
+        Notes
+        -----
+        Unet Article : https://arxiv.org/abs/1505.04597
+
+        """
+
         self.input_shape = input_shape
         self.final_activation = final_activation
         self.n_filters = n_filters
+        self.activation_name = activation
+        self.backbone = backbone  # not use yet
+        self.pretrained = pretrained  # not use yet
 
     def build_model(self) -> Model:
+        """Builds the model.
+        
+        Returns
+        -------
+        Model : tf.keras.model.Model
+            The model.
 
+        """
         n_filters = self.n_filters
         inputs = Input(self.input_shape)
 
@@ -25,12 +62,12 @@ class Unet:
         b1 = self._conv_block(p4, n_filters[4], pool=False)
         b2 = self._conv_block(b1, n_filters[4], pool=False)
 
-        # Decoder
+        # # Decoder
         d1 = Conv2DTranspose(n_filters[3], (3, 3), padding="same", strides=(2, 2))(b2)
         d1 = Concatenate()([d1, c4])
         d1 = self._conv_block(d1, n_filters[3], pool=False)
 
-        d2 = Conv2DTranspose(n_filters[3], (3, 3), padding="same", strides=(2, 2))
+        d2 = Conv2DTranspose(n_filters[3], (3, 3), padding="same", strides=(2, 2))(d1)
         d2 = Concatenate()([d2, c3])
         d2 = self._conv_block(d2, n_filters[2], pool=False)
 
@@ -52,11 +89,11 @@ class Unet:
     def _conv_block(self, x, n_filter, pool=True):
         x = Conv2D(n_filter, (3, 3), padding="same")(x)
         x = BatchNormalization()(x)
-        x = Activation("relu")(x)
+        x = Activation(self.activation_name)(x)
 
         x = Conv2D(n_filter, (3, 3), padding="same")(x)
         x = BatchNormalization()(x)
-        x = Activation("relu")(x)
+        x = Activation(self.activation_name)(x)
         c = x
 
         if pool == True:
