@@ -1,5 +1,5 @@
 from tf_seg.data import data
-from tf_seg.data import aug
+#from tf_seg.data import aug
 
 from tf_seg.config import config
 from tf_seg.config import constant
