@@ -75,8 +75,6 @@ def load_base_config(config):
     # find file extension
     load_style = os.path.splitext(config["base"])[1]
 
-    print("load style :", load_style)
-
     if load_style == ".py":  # module style
         raise NotImplementedError("load_style is not implemented")
 
