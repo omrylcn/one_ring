@@ -36,9 +36,11 @@ class DataLoader(object):
         image_paths: List[str],
         mask_paths: List[str],
         image_size: Tuple[int],
+        batch_size: int,
+        channels: Tuple[int],
+        output_type: Tuple[tf.DType],  # (tf.uint8, tf.uint8),
+        normalizing: bool = True,  
         extensions: Tuple[str] = None,
-        channels: Tuple[int] = (3, 1),
-        output_type: Tuple[tf.DType] = (tf.uint8, tf.uint8),
         one_hot_encoding: bool = False,
         palette: List[Tuple[int]] = None,
         background_adding: bool = False,
@@ -49,9 +51,9 @@ class DataLoader(object):
 
         Parameters
         ----------
-        image : List[str]
+        image_paths : List[str]
             List of paths of train images.
-        mask : List[str]
+        mask_paths : List[str]
             List of paths of train masks (segmentation masks)
         image_size : Tuple[int]
             Tuple, the final height, width of the loaded images.
@@ -61,6 +63,8 @@ class DataLoader(object):
             Tuple of ints, image and mask channels.,
         output_type : Tuple[tf.DType]
             Tuple of tf.DType, the output type of the images and masks.
+        normalizing : bool
+            Boolean, if True, the images and masks are normalized to [0, 1].
         pallette : Tuple[int]
             Tuple of ints, the color pallette of the images and masks.
         one_hot_encoding : bool
@@ -78,6 +82,8 @@ class DataLoader(object):
         self.one_hot_encoding = one_hot_encoding
         self.extensions = extensions
         self.background_adding = background_adding
+        self.batch_size = batch_size
+        self.normalizing = normalizing
 
         # check parameters
         if seed is None:
@@ -183,12 +189,8 @@ class DataLoader(object):
         def _sequnce_function(image_path, mask_path):
             image, mask = self._parse_data(image_path, mask_path)
 
-            # print(image.dtype, mask.dtype)
-            # print("0image shape :",image.shape)
-
             if transform_func:
                 image, mask = transform_func(image, mask)
-                # print("tr",image.dtype, mask.dtype)
 
             if self.one_hot_encoding:
                 if self.palette is None:
@@ -197,10 +199,17 @@ class DataLoader(object):
                                     please specify one when initializing the loader."
                     )
                 image, mask = self._one_hot_encode(image, mask)
-                # print("ht",image.dtype, mask.dtype)
 
-            # image, mask = self._resize_data(image, mask)
-            # print("1image shape :",image.shape)
+            # provide  all data same sizes
+            if not transform_func:
+                image, mask = self._resize_data(image, mask)
+
+            if self.normalizing:
+                tf.image.per_image_standardization(image)
+                # tf.per_image_standardization(mask)
+
+            image = tf.cast(image, tf.float32)
+            mask = tf.cast(mask, tf.float32)
 
             return image, mask
 
@@ -223,6 +232,9 @@ class DataLoader(object):
             A TensorFlow Dataset object.
 
         """
+        # assign batch size
+        if batch_size is None:
+            batch_size = self.batch_size
 
         dataset = tf.data.Dataset.from_tensor_slices((self.image_paths, self.mask_paths))
         if shuffle:
