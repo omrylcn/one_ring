@@ -74,6 +74,6 @@ class MeanMetricWrapper(tf.keras.metrics.Mean):
 
 class DiceScore(MeanMetricWrapper):
     """Computes the Dice score."""
-    
-    def __init__(self, name: str):
+
+    def __init__(self, name: str = "dice_score"):
         super().__init__(fn=dice_coef, name=name)

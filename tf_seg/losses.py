@@ -274,4 +274,4 @@ def focal_tversky(y_true, y_pred, alpha: FloatTensorLike = 0.5, gamma: FloatTens
 
 class FocalTverskyLoss(LossFunctionWrapper):
     def __init__(self, name="focal_tversky_loss", alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon()):
-        super().__init__()
+        super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const)
