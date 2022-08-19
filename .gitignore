@@ -2,8 +2,14 @@
 tf_seg/__pycache__
 tf_seg/models/__pycache__
 tf_seg/layers/__pycache__
+tf_seg/config/__pycache__
+tf_seg/data/__pycache__
+tf_seg/utils/__pycache__
 
+appendix
 
+dataset/camvid
+dataset/road
 dataset_v1.0
 dataset_v2.0
 dross_segmentation
@@ -13,3 +19,6 @@ TensorFlow-Advanced-Segmentation-Models
 trained_models
 oxford_pet_data
 addons
+backup
+~
+tf_seg/config/_config.py
