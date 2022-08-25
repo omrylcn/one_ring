@@ -2,6 +2,7 @@ from typing import Tuple, List
 from tensorflow.keras.layers import Layer, Conv2DTranspose, Concatenate, Conv2D, BatchNormalization, Activation, MaxPooling2D, Input
 from tensorflow.keras import Model
 from tf_seg.backbones import get_backbone
+from tf_seg.layers import ConvUnet as ConvBlock 
 
 # TODO: add backbone and pretrained weights
 class Unet:
@@ -139,35 +140,37 @@ class Unet:
             return c
 
 
-class ConvBlock(Layer):
-    def __init__(self, n_filter, activation, name="conv_block"):
-        super(ConvBlock, self).__init__(name=name)
-        self.n_filter = n_filter
-        self.activation = activation
-        self.layer_name = name
+# class ConvBlock(Layer):
+#     """Convolutional Black fıor Unet and Variants"""
 
-        self.conv1 = Conv2D(n_filter, (3, 3), padding="same")
-        self.bn1 = BatchNormalization()
-        self.act1 = Activation(activation)
+#     def __init__(self, n_filter: int, activation: str, name: str = None):
+#         super(ConvBlock, self).__init__(name=name)
+#         self.n_filter = n_filter
+#         self.activation = activation
+#         self.layer_name = name
 
-        self.conv2 = Conv2D(n_filter, (3, 3), padding="same")
-        self.bn2 = BatchNormalization()
-        self.act2 = Activation(activation)
+#         self.conv1 = Conv2D(n_filter, (3, 3), padding="same")
+#         self.bn1 = BatchNormalization()
+#         self.act1 = Activation(activation)
 
-        self.pool = MaxPooling2D((2, 2), (2, 2))
+#         self.conv2 = Conv2D(n_filter, (3, 3), padding="same")
+#         self.bn2 = BatchNormalization()
+#         self.act2 = Activation(activation)
 
-    def call(self, x, pool=True):
+#         self.pool = MaxPooling2D((2, 2), (2, 2))
 
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.act1(x)
+#     def call(self, x, pool=True):
 
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = self.act2(x)
-        c = x
+#         x = self.conv1(x)
+#         x = self.bn1(x)
+#         x = self.act1(x)
 
-        if pool == True:
-            x = self.pool(x)
-            return c, x
-        return c
+#         x = self.conv2(x)
+#         x = self.bn2(x)
+#         x = self.act2(x)
+#         c = x
+
+#         if pool == True:
+#             x = self.pool(x)
+#             return c, x
+#         return c
