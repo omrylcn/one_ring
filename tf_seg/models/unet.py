@@ -3,10 +3,11 @@ from tensorflow.keras.layers import Layer, Conv2DTranspose, Concatenate, Conv2D,
 from tensorflow.keras import Model
 from tf_seg.backbones import get_backbone
 from tf_seg.layers import ConvUnet as ConvBlock
+from tf_seg.base import ModelBuilder
 
 # TODO: add backbone and pretrained weights
-class Unet:
-    """Vanialla UNet implementation"""
+class Unet(ModelBuilder):
+    """Model builder for Vanialla UNet Model"""
 
     def __init__(
         self,

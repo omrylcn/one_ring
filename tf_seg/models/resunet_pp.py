@@ -2,9 +2,9 @@
 from typing import Tuple, List
 from tensorflow.keras import Model
 from tensorflow.keras.layers import GlobalAveragePooling2D, Reshape, Dense, Multiply, BatchNormalization, Conv2D, Activation, Add, MaxPooling2D, Input, Concatenate, UpSampling2D
+from tf_seg.base import ModelBuilder
 
-
-class ResUnetPlusPlus:
+class ResUnetPlusPlus(ModelBuilder):
     def __init__(self, input_shape: Tuple = (256, 256, 3), n_filters: List[int] = [16, 32, 64, 128, 256], attn_activation_name: str = "linear", name: str = "ResUnet++") -> None:
         self.input_shape = input_shape
         self.n_filters = n_filters

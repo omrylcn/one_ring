@@ -18,10 +18,10 @@ from tensorflow.keras.layers import (
 )
 from tensorflow.keras.models import Model
 from typing import Tuple, List, Dict, Any, Union, Optional
+from tf_seg.base import ModelBuilder
 
-
-class ResUnet:
-    """Deep Residual U-Net implementation"""
+class ResUnet(ModelBuilder):
+    """A model builder for Deep Residual U-Net Model."""
 
     def __init__(
         self,
@@ -32,7 +32,7 @@ class ResUnet:
         backbone: str = None,
         pretrained: str = "imagenet",
     ) -> None:
-        """ResUnet constructor.
+        """ Initializes the model builder.
 
         Parameters
         ----------
