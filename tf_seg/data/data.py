@@ -10,6 +10,7 @@ from typing import List, Tuple
 import tensorflow as tf
 import random
 import os
+from tf_seg.base import DataLoaderAbstract
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -21,7 +22,7 @@ def find_data_extension(path):
     return os.path.splitext(path)[1]
 
 
-class DataLoader(object):
+class DataLoader(DataLoaderAbstract):
     """
     A TensorFlow Dataset API based loader for semantic segmentation problems.
 
