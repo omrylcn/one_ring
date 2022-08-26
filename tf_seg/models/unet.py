@@ -2,7 +2,7 @@ from typing import Tuple, List
 from tensorflow.keras.layers import Layer, Conv2DTranspose, Concatenate, Conv2D, BatchNormalization, Activation, MaxPooling2D, Input
 from tensorflow.keras import Model
 from tf_seg.backbones import get_backbone
-from tf_seg.layers import ConvUnet as ConvBlock 
+from tf_seg.layers import ConvUnet as ConvBlock
 
 # TODO: add backbone and pretrained weights
 class Unet:
@@ -10,14 +10,14 @@ class Unet:
 
     def __init__(
         self,
+        name: str = "unet",
         input_shape: Tuple = (512, 512, 3),
         n_filters: List[int] = [16, 32, 64, 128, 256],
         activation: str = "relu",
         final_activation: str = "sigmoid",
         backbone: str = None,
         pretrained: str = "imagenet",
-    ):
-
+    ) -> None:
         """Unet constructor.
 
         Parameters
@@ -45,8 +45,9 @@ class Unet:
         self.final_activation = final_activation
         self.n_filters = n_filters
         self.activation_name = activation
-        self.backbone = backbone  # not use yet
-        self.pretrained = pretrained  # not use yet
+        self.backbone = backbone
+        self.pretrained = pretrained
+        self.name = name
 
     def build_model(self) -> Model:
         """Builds the model.
@@ -94,7 +95,7 @@ class Unet:
         # output
         outputs = Conv2D(1, (1, 1), activation=self.final_activation)(d)
         # Model
-        model = Model(inputs, outputs)
+        model = Model(inputs, outputs, name=self.name)
 
         return model
 
@@ -123,54 +124,20 @@ class Unet:
 
             return [c0, *backbone_(c0)]  # backbone_#backbone_(c0)#[c0,*backbone_(c0)]#*outputs.outputs]
 
-    def _conv_block(self, x, n_filter, pool=True):
-        x = Conv2D(n_filter, (3, 3), padding="same")(x)
-        x = BatchNormalization()(x)
-        x = Activation(self.activation_name)(x)
+    # def _conv_block(self, x, n_filter, pool=True):
+    #     x = Conv2D(n_filter, (3, 3), padding="same")(x)
+    #     x = BatchNormalization()(x)
+    #     x = Activation(self.activation_name)(x)
 
-        x = Conv2D(n_filter, (3, 3), padding="same")(x)
-        x = BatchNormalization()(x)
-        x = Activation(self.activation_name)(x)
-        c = x
+    #     x = Conv2D(n_filter, (3, 3), padding="same")(x)
+    #     x = BatchNormalization()(x)
+    #     x = Activation(self.activation_name)(x)
+    #     c = x
 
-        if pool == True:
-            x = MaxPooling2D((2, 2), (2, 2))(x)
-            return c, x
-        else:
-            return c
+    #     if pool == True:
+    #         x = MaxPooling2D((2, 2), (2, 2))(x)
+    #         return c, x
+    #     else:
+    #         return c
 
 
-# class ConvBlock(Layer):
-#     """Convolutional Black fıor Unet and Variants"""
-
-#     def __init__(self, n_filter: int, activation: str, name: str = None):
-#         super(ConvBlock, self).__init__(name=name)
-#         self.n_filter = n_filter
-#         self.activation = activation
-#         self.layer_name = name
-
-#         self.conv1 = Conv2D(n_filter, (3, 3), padding="same")
-#         self.bn1 = BatchNormalization()
-#         self.act1 = Activation(activation)
-
-#         self.conv2 = Conv2D(n_filter, (3, 3), padding="same")
-#         self.bn2 = BatchNormalization()
-#         self.act2 = Activation(activation)
-
-#         self.pool = MaxPooling2D((2, 2), (2, 2))
-
-#     def call(self, x, pool=True):
-
-#         x = self.conv1(x)
-#         x = self.bn1(x)
-#         x = self.act1(x)
-
-#         x = self.conv2(x)
-#         x = self.bn2(x)
-#         x = self.act2(x)
-#         c = x
-
-#         if pool == True:
-#             x = self.pool(x)
-#             return c, x
-#         return c
