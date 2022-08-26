@@ -21,15 +21,56 @@ from typing import Tuple, List, Dict, Any, Union, Optional
 
 
 class ResUnet:
+    """Deep Residual U-Net implementation"""
+
     def __init__(
         self,
         input_shape: Tuple = (256, 256, 3),
         n_filters: List[int] = [16, 32, 64, 96, 128],
+        activation: str = "relu",
+        final_activation: str = "sigmoid",
+        backbone: str = None,
+        pretrained: str = "imagenet",
     ) -> None:
+        """ResUnet constructor.
+
+        Parameters
+        ----------
+        input_shape : Tuple
+            Shape of the input image.
+        n_filters : List[int]
+            Number of filters in each convolutional layer.
+        activation : str
+            Activation function to use.
+        final_activation : str
+            Activation function to use for the final layer.
+        backbone : str
+            Backbone to use.
+        pretrained : bool
+            Whether to use pretrained weights.
+
+        Notes
+        -----
+        Deep Residual Unet Article : https://arxiv.org/pdf/1711.10684.pdf
+
+        """
+
         self.input_shape = input_shape
+        self.final_activation = final_activation
         self.n_filters = n_filters
+        self.activation_name = activation
+        self.backbone = backbone
+        self.pretrained = pretrained
 
     def build_model(self):
+        """Builds the model.
+
+        Returns
+        -------
+        Model : tf.keras.model.Model
+            The model.
+
+        """
 
         n_filters = self.n_filters
         inputs = Input(self.input_shape)
