@@ -40,12 +40,13 @@ class DataLoader(DataLoaderAbstract):
         batch_size: int,
         channels: Tuple[int],
         output_type: Tuple[tf.DType],  # (tf.uint8, tf.uint8),
-        normalizing: bool = True,  
+        name: str = "loader",
+        normalizing: bool = True, 
         extensions: Tuple[str] = None,
         one_hot_encoding: bool = False,
         palette: List[Tuple[int]] = None,
         background_adding: bool = False,
-        seed: int = 48,
+        seed: int = 48      
     ):
         """
         Initializes the data loader object
@@ -64,6 +65,8 @@ class DataLoader(DataLoaderAbstract):
             Tuple of ints, image and mask channels.,
         output_type : Tuple[tf.DType]
             Tuple of tf.DType, the output type of the images and masks.
+        name : str, optional
+            Name of the loader, by default "loader"
         normalizing : bool
             Boolean, if True, the images and masks are normalized to [0, 1].
         pallette : Tuple[int]
@@ -85,6 +88,7 @@ class DataLoader(DataLoaderAbstract):
         self.background_adding = background_adding
         self.batch_size = batch_size
         self.normalizing = normalizing
+        self.name = name
 
         # check parameters
         if seed is None:
