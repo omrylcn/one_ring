@@ -4,7 +4,7 @@ Data loader  abstract class.
 """
 
 from abc import ABC, abstractclassmethod
-import tensorflow
+import tensorflow as tf
 
 
 class DataLoaderAbstract(ABC):
