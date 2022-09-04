@@ -16,10 +16,10 @@ def pascal_case_to_snake_case(s:str)->str:
 
 def get_model_builder(config:Union[DictConfig, ListConfig])->Model:
     """Get model builder  from config file"""
-    class_name = pascal_case_to_snake_case(config.model.class_name)
+    class_name = pascal_case_to_snake_case(config.class_name)
     model = model_lib[class_name]
 
-    model_config = config.model.copy()    
+    model_config = config.copy()    
     model_config.pop("class_name")
     
     return model(**model_config)

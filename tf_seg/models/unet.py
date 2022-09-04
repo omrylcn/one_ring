@@ -11,6 +11,7 @@ class Unet(ModelBuilder):
 
     def __init__(
         self,
+        output_size: int,
         name: str = "unet",
         input_shape: Tuple = (512, 512, 3),
         n_filters: List[int] = [16, 32, 64, 128, 256],
@@ -23,6 +24,10 @@ class Unet(ModelBuilder):
 
         Parameters
         ----------
+        output_size : int
+            The output size of the model.
+        name : str, optional
+            The name of the model. The default is "unet".
         input_shape : Tuple
             Shape of the input image.
         n_filters : List[int]
@@ -49,6 +54,7 @@ class Unet(ModelBuilder):
         self.backbone = backbone
         self.pretrained = pretrained
         self.name = name
+        self.output_size = output_size
 
     def build_model(self) -> Model:
         """Builds the model.
@@ -94,7 +100,7 @@ class Unet(ModelBuilder):
                 d = ConvBlock(fltr, self.activation_name, name=f"decode_{fltr}")(d, pool=False)
 
         # output
-        outputs = Conv2D(1, (1, 1), activation=self.final_activation)(d)
+        outputs = Conv2D(self.output_size, (1, 1), activation=self.final_activation)(d)
         # Model
         model = Model(inputs, outputs, name=self.name)
 
@@ -140,5 +146,3 @@ class Unet(ModelBuilder):
     #         return c, x
     #     else:
     #         return c
-
-
