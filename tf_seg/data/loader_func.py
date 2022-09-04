@@ -102,6 +102,7 @@ def get_custom_data_loader(data_config: Union[dict, DictConfig, ListConfig], tra
         pass
 
     """
+    
     image_output_type = getattr(tf, data_config["output_type"][0].split(".")[-1])  # objectinput must be like tf.float32 string
     mask_output_type = getattr(tf, data_config["output_type"][1].split(".")[-1])
 
@@ -109,7 +110,7 @@ def get_custom_data_loader(data_config: Union[dict, DictConfig, ListConfig], tra
     if train_data:
         train_image_paths = sorted(glob(os.path.join(data_config["path"], "train_images/*")))
         train_mask_paths = sorted(glob(os.path.join(data_config["path"], "train_masks/*")))
-        _check_paths(train_image_paths, train_mask_paths,"train data")
+        _check_paths(train_image_paths, train_mask_paths, "train data")
 
         train_data_loader = DataLoader(
             train_image_paths,
@@ -190,8 +191,8 @@ def _check_paths(image_paths: List[str], mask_paths: List[str], info: str) -> No
     """
     
     if len(image_paths) == 0:
-        raise FileNotFoundError(f"{info} Image paths {image_paths} is empty")
+        raise FileNotFoundError(f"{info} image paths {image_paths} is empty")
     if len(mask_paths) == 0:
-        raise FileNotFoundError(f"Mask paths {mask_paths} is empty")
+        raise FileNotFoundError(f"{info} mask paths {mask_paths} is empty")
 
     assert len(image_paths) == len(mask_paths), f"Number of {info} images and masks are not equal {len(image_paths)} != {len(mask_paths)}"
