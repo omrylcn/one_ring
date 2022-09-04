@@ -1,5 +1,5 @@
 """
-Albumentations transformers functions for train,valid,test
+Albumentations transformers templeate or example functions for train,valid,test
 """
 
 import albumentations as A

@@ -41,12 +41,12 @@ class DataLoader(DataLoaderAbstract):
         channels: Tuple[int],
         output_type: Tuple[tf.DType],  # (tf.uint8, tf.uint8),
         name: str = "loader",
-        normalizing: bool = True, 
+        normalizing: bool = True,
         extensions: Tuple[str] = None,
         one_hot_encoding: bool = False,
         palette: List[Tuple[int]] = None,
         background_adding: bool = False,
-        seed: int = 48      
+        seed: int = 48,
     ):
         """
         Initializes the data loader object
@@ -191,12 +191,14 @@ class DataLoader(DataLoaderAbstract):
         return tf.py_function(self._sequnce_function, [image_path, mask_path], [self.output_type[0], self.output_type[1]])
 
     def _create_sequence(self, transform_func):
+        self.transform_func = transform_func
+
         def _sequnce_function(image_path, mask_path):
             image, mask = self._parse_data(image_path, mask_path)
 
-            if transform_func:
-                image, mask = transform_func(image, mask)
-
+            if self.transform_func:
+                image, mask = self.transform_func(image, mask)
+            
             if self.one_hot_encoding:
                 if self.palette is None:
                     raise ValueError(
@@ -204,9 +206,10 @@ class DataLoader(DataLoaderAbstract):
                                     please specify one when initializing the loader."
                     )
                 image, mask = self._one_hot_encode(image, mask)
-
+           
             # provide  all data same sizes
-            if not transform_func:
+            if self.transform_func is None:
+                # print("no")
                 image, mask = self._resize_data(image, mask)
 
             if self.normalizing:
@@ -251,6 +254,7 @@ class DataLoader(DataLoaderAbstract):
         dataset = dataset.map(self._map_fucntion, num_parallel_calls=AUTOTUNE)
 
         if batch_size:
+            # print(batch_size)
             dataset = dataset.batch(batch_size)
         # dataset = dataset.prefetch(buffer_size=AUTOTUNE)
         return dataset
