@@ -1,15 +1,14 @@
 # pycache
 tf_seg/__pycache__
-tf_seg/models/__pycache__
-tf_seg/layers/__pycache__
-tf_seg/config/__pycache__
-tf_seg/data/__pycache__
-tf_seg/utils/__pycache__
+tf_seg/**/__pycache__
+
 
 appendix
 
 dataset/camvid
 dataset/road
+dataset/test_data
+
 dataset_v1.0
 dataset_v2.0
 dross_segmentation
@@ -24,3 +23,4 @@ backup
 tf_seg/config/_config.py
 workspace.ipynb
 config/test.yaml
+

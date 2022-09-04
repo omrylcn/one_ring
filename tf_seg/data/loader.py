@@ -1,6 +1,6 @@
 import os
 from glob import glob
-from typing import Union, Dict, Tuple
+from typing import Union, Dict, Tuple, List
 from omegaconf import DictConfig, ListConfig
 import tensorflow as tf
 
@@ -109,7 +109,7 @@ def get_custom_data_loader(data_config: Union[dict, DictConfig, ListConfig], tra
     if train_data:
         train_image_paths = sorted(glob(os.path.join(data_config["path"], "train_images/*")))
         train_mask_paths = sorted(glob(os.path.join(data_config["path"], "train_masks/*")))
-        check_paths(train_image_paths, train_mask_paths)
+        _check_paths(train_image_paths, train_mask_paths,"train data")
 
         train_data_loader = DataLoader(
             train_image_paths,
@@ -130,8 +130,8 @@ def get_custom_data_loader(data_config: Union[dict, DictConfig, ListConfig], tra
     if val_data:
         val_image_paths = sorted(glob(os.path.join(data_config["path"], "val_images/*")))
         val_mask_paths = sorted(glob(os.path.join(data_config["path"], "val_masks/*")))
-        check_paths(val_image_paths, val_mask_paths)
-        
+        _check_paths(val_image_paths, val_mask_paths,"val data")
+
         val_data_loader = DataLoader(
             val_image_paths,
             val_mask_paths,
@@ -150,8 +150,8 @@ def get_custom_data_loader(data_config: Union[dict, DictConfig, ListConfig], tra
     if test_data:
         test_image_paths = sorted(glob(os.path.join(data_config["path"], "test_images/*")))
         test_mask_paths = sorted(glob(os.path.join(data_config["path"], "test_masks/*")))
-        check_paths(test_image_paths, test_mask_paths)
-        
+        _check_paths(test_image_paths, test_mask_paths,"test data")
+
         test_data_loader = DataLoader(
             test_image_paths,
             test_mask_paths,
@@ -170,11 +170,25 @@ def get_custom_data_loader(data_config: Union[dict, DictConfig, ListConfig], tra
     return data_loader_list
 
 
-def check_paths(image_paths:List[str], mask_paths:List[str], info:str) ->None:
-    # if not os.path.exists(image_path):
-    #     raise FileNotFoundError(f"Image path {image_path} does not exist")
-    # if not os.path.exists(mask_path):
-    #     raise FileNotFoundError(f"Mask path {mask_path} does not exist")
+def _check_paths(image_paths: List[str], mask_paths: List[str], info: str) -> None:
+    """
+    Check if the number of image and mask paths are the same.
+    
+    Parameters
+    ----------
+    image_paths : List[str]
+        A list of image paths.
+    mask_paths : List[str]
+        A list of mask paths.
+    info : str
+        A string to describe the data.
+
+    Returns
+    -------
+        None
+
+    """
+    
     if len(image_paths) == 0:
         raise FileNotFoundError(f"{info} Image paths {image_paths} is empty")
     if len(mask_paths) == 0:
