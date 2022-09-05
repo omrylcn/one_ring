@@ -1,22 +1,43 @@
+import os
+import importlib
 import tensorflow as tf
-import albumentations as A
+from typing import Union
+from omegaconf import DictConfig, ListConfig
 
 
-class AlbumentatiosWrapper:
-    """Albumentation Wrapper to use tensorflow dataset."""
 
-    def __init__(self, transforms, output_type=[tf.uint8, tf.uint8]):
-        self.transforms = transforms
-        self.output_type = output_type
 
-    def _aug_albument(self, image, mask):
-        data = {"image": image, "mask": mask}
-        data = self.transforms(**data)
-        image = data["image"]
-        mask = data["mask"]
-        return image, mask
 
-    @tf.function
-    def __call__(self, image, mask):
-        aug_img, aug_mask = tf.numpy_function(func=self._aug_albument, inp=[image, mask], Tout=self.output_type)
-        return aug_img, aug_mask
+def load_module_style_transformer(config: Union[DictConfig, ListConfig]):
+    """Load python module style transformer"""
+
+    transformer_lib = {}
+
+    for p in ["train", "val", "test"]:
+
+        string = config[p].path
+
+        if string:
+
+            parameters = config[p].parameters
+            if parameters is None:
+                parameters = {}
+
+            module = string.split(":")[0]
+            function_name = string.split(":")[1]
+            module_file_path = module.replace(".", "/") + ".py"
+            assert os.path.isfile(module_file_path), f"{module_file_path} module file not found"
+
+            # load module
+            m = importlib.import_module(module)
+            transformer = getattr(m, function_name)(**parameters)
+            transformer_lib[p] = transformer
+
+        else:
+            transformer_lib[p] = None
+
+    return transformer_lib
+
+
+def load_file_style_transformer():
+    raise NotImplementedError()
