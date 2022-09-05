@@ -28,7 +28,7 @@ def get_train_transform(image_size: List[int], p: float = 0.5):
     return train_transforms
 
 
-def get_test_transform(image_size: List(int)):
+def get_test_transform(image_size: List[int]):
     """
     Albumentations transformers for test or validation data
 

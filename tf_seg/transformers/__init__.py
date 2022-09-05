@@ -27,8 +27,8 @@ def get_transformer(config: Union[DictConfig, ListConfig]) -> dict:
 
     """
 
-    load_style = config.augmentation.load_style
-    aug_config = config.augmentation.copy()
+    load_style = config.load_style
+    aug_config = config.copy()
 
     if load_style == "module":
         transformer_lib = load_module_style_transformer(aug_config)
