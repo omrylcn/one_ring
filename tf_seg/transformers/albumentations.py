@@ -3,20 +3,20 @@ Albumentations transformers templeate or example functions for train,valid,test
 """
 
 import albumentations as A
+from typing import List
 
-
-def get_train_transform(image_size: int,p:float=p):
+def get_train_transform(image_size: List[int], p: float = 0.5):
     """
     Albumentations transformers for train data
     """
     train_transforms = A.Compose(
         [
-            A.Resize(image_size, image_size),
+            A.Resize(image_size[0], image_size[1]),
             A.OneOf(
                 [
-                    A.RandomSizedCrop(min_max_height=(256, 256), height=image_size, width=image_size, p=p),
-                    A.CenterCrop(height=image_size, width=image_size, p=p),
-                    A.PadIfNeeded(min_height=image_size, min_width=image_size, p=p),
+                    A.RandomSizedCrop(min_max_height=(256, 256), height=image_size[0], width=image_size[1], p=p),
+                    A.CenterCrop(height=image_size[0], width=image_size[1], p=p),
+                    A.PadIfNeeded(min_height=image_size[0], min_width=image_size[1], p=p),
                 ],
                 p=1,
             ),
@@ -28,14 +28,14 @@ def get_train_transform(image_size: int,p:float=p):
     return train_transforms
 
 
-def get_test_transform(image_size: int):
+def get_test_transform(image_size: List(int)):
     """
     Albumentations transformers for test or validation data
 
     """
     test_transforms = A.Compose(
         [
-            A.Resize(image_size, image_size),
+            A.Resize(image_size[0], image_size[1]),
         ]
     )
 
