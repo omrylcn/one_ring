@@ -2,6 +2,7 @@ import tensorflow as tf
 from typing import Callable, Optional
 from tf_seg.losses import dice_coef
 from tf_seg.utils.types import AcceptableDTypes
+from tensorflow.keras.metrics import Accuracy, MeanIoU
 
 # from tensorflow.keras.metrics import MeanMetricWrapper
 
