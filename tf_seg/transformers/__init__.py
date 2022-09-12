@@ -2,7 +2,7 @@ from typing import Union
 from omegaconf import DictConfig, ListConfig
 from tf_seg.utils import load_module_style_transformer, load_file_style_transformer
 
-#from tf_seg.transformers.wrappers import AlbumentatiosWrapper
+# from tf_seg.transformers.wrappers import AlbumentatiosWrapper
 from tf_seg.transformers.transformer import Transformer
 
 
@@ -12,7 +12,10 @@ from tf_seg.transformers.transformer import Transformer
 # def load_module_style_transformer():
 #     pass
 
-load_style_lib = {"module": load_module_style_transformer, "file": load_file_style_transformer}
+load_style_lib = {
+    "module": load_module_style_transformer,
+    "file": load_file_style_transformer,
+}
 
 
 # TODO : design transformers type
@@ -39,11 +42,10 @@ def get_transformer(config: Union[DictConfig, ListConfig]) -> dict:
         raise NotImplementedError(f"Unvalid style : {load_style}")
 
     transformers_object_lib = {}
-    for k,v in transformer_lib.items():
+    for k, v in transformer_lib.items():
         if v is not None:
-            transformers_object_lib[k] = Transformer(aug_config, k, v)   
+            transformers_object_lib[k] = Transformer(aug_config, k, v)
         else:
             transformers_object_lib[k] = None
-    
+
     return transformers_object_lib
-  

@@ -12,7 +12,14 @@ import numpy as np
 
 import tensorflow as tf
 from tensorflow.keras.optimizers.schedules import PolynomialDecay
-from tensorflow.keras.callbacks import Callback, TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, LearningRateScheduler
+from tensorflow.keras.callbacks import (
+    Callback,
+    TensorBoard,
+    ModelCheckpoint,
+    EarlyStopping,
+    ReduceLROnPlateau,
+    LearningRateScheduler,
+)
 from tf_seg.utils import snake_case_to_pascal_case
 
 # from tf_seg.utils.plot import plot_confusion_matrix, confusion_matrix_to_iou_recall_precision, plot_to_image
@@ -69,8 +76,16 @@ class UpdateBestWeights(Callback):
         self.model.set_weights(self.best_weights)
 
 
-keras_callbacks_lib = {"tensorboard": TensorBoard, "model_checkpoint": ModelCheckpoint, "early_stopping": EarlyStopping, "reduce_lr_on_plateau": ReduceLROnPlateau}
-custom_callbacks_lib = {"meausre_total_time": MeasureTotalTime, "uptade_best_weights": UpdateBestWeights}
+keras_callbacks_lib = {
+    "tensorboard": TensorBoard,
+    "model_checkpoint": ModelCheckpoint,
+    "early_stopping": EarlyStopping,
+    "reduce_lr_on_plateau": ReduceLROnPlateau,
+}
+custom_callbacks_lib = {
+    "meausre_total_time": MeasureTotalTime,
+    "uptade_best_weights": UpdateBestWeights,
+}
 
 
 def _set_callbacks(name: str, config: dict) -> Callback:
@@ -87,7 +102,13 @@ def _set_callbacks(name: str, config: dict) -> Callback:
         return callback
 
 
-def get_callbacks(config: Union[DictConfig, ListConfig], callbacks_lib: Dict[str, Callback] = {**keras_callbacks_lib, **custom_callbacks_lib}) -> Dict[str, Callback]:
+def get_callbacks(
+    config: Union[DictConfig, ListConfig],
+    callbacks_lib: Dict[str, Callback] = {
+        **keras_callbacks_lib,
+        **custom_callbacks_lib,
+    },
+) -> Dict[str, Callback]:
 
     """
     Get callbacks from config file.

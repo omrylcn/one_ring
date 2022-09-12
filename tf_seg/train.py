@@ -21,7 +21,14 @@ from tf_seg.utils import snake_case_to_pascal_case
 class Trainer:
     "Trainer class for training a model"
 
-    def __init__(self, config: Union[DictConfig, ListConfig], model: Model, train_data: Dataset, val_data: Optional[Dataset] = None, callbacks: Optional[List[Callback]] = None) -> None:
+    def __init__(
+        self,
+        config: Union[DictConfig, ListConfig],
+        model: Model,
+        train_data: Dataset,
+        val_data: Optional[Dataset] = None,
+        callbacks: Optional[List[Callback]] = None,
+    ) -> None:
         """
 
 
@@ -46,7 +53,6 @@ class Trainer:
         self.callbacks = callbacks
 
         self._check_params()
-        
 
     def _check_params(self) -> None:
         "Check parameters types"
@@ -77,7 +83,9 @@ class Trainer:
         self._check_trainer_params()
 
         optimizer_conf = self.config.optimizer
-        optimizer = eval(snake_case_to_pascal_case(optimizer_conf["name"]))(**optimizer_conf["params"])
+        optimizer = eval(snake_case_to_pascal_case(optimizer_conf["name"]))(
+            **optimizer_conf["params"]
+        )
 
         losses = [eval(snake_case_to_pascal_case(i))() for i in self.config.losses]
         metrics = [eval(snake_case_to_pascal_case(i))() for i in self.config.metrics]
@@ -88,7 +96,12 @@ class Trainer:
     def train(self):
         "Train tf keras model"
 
-        self.model.fit(self.train_data, epochs=self.config.epochs, callbacks=self.callbacks, validation_data=self.val_data)
+        self.model.fit(
+            self.train_data,
+            epochs=self.config.epochs,
+            callbacks=self.callbacks,
+            validation_data=self.val_data,
+        )
 
     def evaluate(self):
         if self.val_data:

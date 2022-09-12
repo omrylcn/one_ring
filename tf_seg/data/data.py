@@ -106,7 +106,9 @@ class DataLoader(DataLoaderAbstract):
         # TODO add logger check data information process
 
         # check path
-        assert len(self.image_paths) == len(self.mask_paths) and len(self.image_paths) > 0, "Number of images and masks do not match!"
+        assert (
+            len(self.image_paths) == len(self.mask_paths) and len(self.image_paths) > 0
+        ), "Number of images and masks do not match!"
 
         # check extensions
         if self.extensions is None:
@@ -120,18 +122,30 @@ class DataLoader(DataLoaderAbstract):
             image_extension = find_data_extension(self.image_paths[0])
             mask_extension = find_data_extension(self.mask_paths[0])
 
-            assert self.extensions[0] == image_extension, f"Image extensions do not match!, given image extension : {self.extensions[0]} but found : {find_data_extension(self.image_paths[0])}"
-            assert self.extensions[1] == mask_extension, f"Mask extensions do not match!, given mask extension : {self.extensions[1]} but found : {find_data_extension(self.mask_paths[0])}"
+            assert (
+                self.extensions[0] == image_extension
+            ), f"Image extensions do not match!, given image extension : {self.extensions[0]} but found : {find_data_extension(self.image_paths[0])}"
+            assert (
+                self.extensions[1] == mask_extension
+            ), f"Mask extensions do not match!, given mask extension : {self.extensions[1]} but found : {find_data_extension(self.mask_paths[0])}"
 
-        self.image_decode_function = getattr(tf.image, "decode_" + self.extensions[0][1:])
-        self.mask_decode_function = getattr(tf.image, "decode_" + self.extensions[1][1:])
+        self.image_decode_function = getattr(
+            tf.image, "decode_" + self.extensions[0][1:]
+        )
+        self.mask_decode_function = getattr(
+            tf.image, "decode_" + self.extensions[1][1:]
+        )
 
         # check shape
         image, mask = self._parse_data(self.image_paths[0], self.mask_paths[0])
         # print(image,mask)
         # print(image.shape, mask.shape)
-        assert len(image.shape) == 3 and image.shape[-1] == self.channels[0], f"Image has wrong shape!, image shape : {len(image)}"
-        assert len(mask.shape) == 3 and mask.shape[-1] == self.channels[1], f"Mask has wrong shape!, mask shape : {len(mask)}"
+        assert (
+            len(image.shape) == 3 and image.shape[-1] == self.channels[0]
+        ), f"Image has wrong shape!, image shape : {len(image)}"
+        assert (
+            len(mask.shape) == 3 and mask.shape[-1] == self.channels[1]
+        ), f"Mask has wrong shape!, mask shape : {len(mask)}"
 
     def _one_hot_encode(self, image, mask):
         """
@@ -188,7 +202,11 @@ class DataLoader(DataLoaderAbstract):
         Maps the data into a TensorFlow Dataset object.
         """
 
-        return tf.py_function(self._sequnce_function, [image_path, mask_path], [self.output_type[0], self.output_type[1]])
+        return tf.py_function(
+            self._sequnce_function,
+            [image_path, mask_path],
+            [self.output_type[0], self.output_type[1]],
+        )
 
     def _create_sequence(self, transform_func):
         self.transform_func = transform_func
@@ -198,7 +216,7 @@ class DataLoader(DataLoaderAbstract):
 
             if self.transform_func:
                 image, mask = self.transform_func(image, mask)
-            
+
             if self.one_hot_encoding:
                 if self.palette is None:
                     raise ValueError(
@@ -206,7 +224,7 @@ class DataLoader(DataLoaderAbstract):
                                     please specify one when initializing the loader."
                     )
                 image, mask = self._one_hot_encode(image, mask)
-           
+
             # provide  all data same sizes
             if self.transform_func is None:
                 # print("no")
@@ -223,7 +241,12 @@ class DataLoader(DataLoaderAbstract):
 
         self._sequnce_function = _sequnce_function
 
-    def load_data(self, batch_size: int = None, shuffle: bool = True, transform_func: callable = None) -> tf.data.Dataset:
+    def load_data(
+        self,
+        batch_size: int = None,
+        shuffle: bool = True,
+        transform_func: callable = None,
+    ) -> tf.data.Dataset:
         """
         Loads the data into a TensorFlow Dataset object.
         Parameters
@@ -244,7 +267,9 @@ class DataLoader(DataLoaderAbstract):
         if batch_size is None:
             batch_size = self.batch_size
 
-        dataset = tf.data.Dataset.from_tensor_slices((self.image_paths, self.mask_paths))
+        dataset = tf.data.Dataset.from_tensor_slices(
+            (self.image_paths, self.mask_paths)
+        )
         if shuffle:
             dataset = dataset.shuffle(buffer_size=len(self.image_paths), seed=self.seed)
 

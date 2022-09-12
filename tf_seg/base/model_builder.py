@@ -6,6 +6,7 @@ Model builder abstract class.
 from abc import ABC, abstractmethod
 from tensorflow.keras.models import Model
 
+
 class ModelBuilder(ABC):
     """Model builder abstract class. It is inherited by all the model builders."""
 
@@ -26,5 +27,5 @@ class ModelBuilder(ABC):
         return f"model builder class for : {self.__class__.__name__}"
 
     def __repr__(self):
-        
+
         return f"model builder class for : {self.__class__.__name__}"

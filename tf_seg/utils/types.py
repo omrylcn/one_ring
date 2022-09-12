@@ -42,7 +42,9 @@ Regularizer = Union[None, dict, str, Callable, tf.keras.regularizers.Regularizer
 Constraint = Union[None, dict, str, Callable, tf.keras.constraints.Constraint]
 Activation = Union[None, str, Callable]
 if importlib.util.find_spec("tensorflow.keras.optimizers.legacy") is not None:
-    Optimizer = Union[tf.keras.optimizers.Optimizer, tf.keras.optimizers.legacy.Optimizer, str]
+    Optimizer = Union[
+        tf.keras.optimizers.Optimizer, tf.keras.optimizers.legacy.Optimizer, str
+    ]
 else:
     Optimizer = Union[tf.keras.optimizers.Optimizer, str]
 
@@ -60,4 +62,9 @@ FloatTensorLike = Union[tf.Tensor, float, np.float16, np.float32, np.float64]
 AcceptableDTypes = Union[tf.DType, np.dtype, type, int, str, None]
 
 
-Tensor = Union[python.framework.ops.Tensor, python.framework.sparse_tensor.SparseTensor, python.ops.ragged.ragged_tensor.RaggedTensor, python.framework.ops.EagerTensor]
+Tensor = Union[
+    python.framework.ops.Tensor,
+    python.framework.sparse_tensor.SparseTensor,
+    python.ops.ragged.ragged_tensor.RaggedTensor,
+    python.framework.ops.EagerTensor,
+]

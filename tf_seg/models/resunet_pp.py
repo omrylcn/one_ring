@@ -1,11 +1,31 @@
 # import tensorflow as tf
 from typing import Tuple, List
 from tensorflow.keras import Model
-from tensorflow.keras.layers import GlobalAveragePooling2D, Reshape, Dense, Multiply, BatchNormalization, Conv2D, Activation, Add, MaxPooling2D, Input, Concatenate, UpSampling2D
+from tensorflow.keras.layers import (
+    GlobalAveragePooling2D,
+    Reshape,
+    Dense,
+    Multiply,
+    BatchNormalization,
+    Conv2D,
+    Activation,
+    Add,
+    MaxPooling2D,
+    Input,
+    Concatenate,
+    UpSampling2D,
+)
 from tf_seg.base import ModelBuilder
 
+
 class ResUnetPlusPlus(ModelBuilder):
-    def __init__(self, input_shape: Tuple = (256, 256, 3), n_filters: List[int] = [16, 32, 64, 128, 256], attn_activation_name: str = "linear", name: str = "ResUnet++") -> None:
+    def __init__(
+        self,
+        input_shape: Tuple = (256, 256, 3),
+        n_filters: List[int] = [16, 32, 64, 128, 256],
+        attn_activation_name: str = "linear",
+        name: str = "ResUnet++",
+    ) -> None:
         self.input_shape = input_shape
         self.n_filters = n_filters
         self.name = name
@@ -84,8 +104,18 @@ class ResUnetPlusPlus(ModelBuilder):
 
         se = GlobalAveragePooling2D()(init)
         se = Reshape(se_shape)(se)
-        se = Dense(filters // ratio, activation="relu", kernel_initializer="he_normal", use_bias=False)(se)
-        se = Dense(filters, activation="sigmoid", kernel_initializer="he_normal", use_bias=False)(se)
+        se = Dense(
+            filters // ratio,
+            activation="relu",
+            kernel_initializer="he_normal",
+            use_bias=False,
+        )(se)
+        se = Dense(
+            filters,
+            activation="sigmoid",
+            kernel_initializer="he_normal",
+            use_bias=False,
+        )(se)
         x = Multiply()([init, se])
         return x
 
@@ -108,13 +138,28 @@ class ResUnetPlusPlus(ModelBuilder):
         return x
 
     def _assp_block(self, x, n_filter, rate_scale=1):
-        x1 = Conv2D(n_filter, (3, 3), dilation_rate=(6 * rate_scale, 6 * rate_scale), padding="same")(x)
+        x1 = Conv2D(
+            n_filter,
+            (3, 3),
+            dilation_rate=(6 * rate_scale, 6 * rate_scale),
+            padding="same",
+        )(x)
         x1 = BatchNormalization()(x1)
 
-        x2 = Conv2D(n_filter, (3, 3), dilation_rate=(12 * rate_scale, 12 * rate_scale), padding="same")(x)
+        x2 = Conv2D(
+            n_filter,
+            (3, 3),
+            dilation_rate=(12 * rate_scale, 12 * rate_scale),
+            padding="same",
+        )(x)
         x2 = BatchNormalization()(x2)
 
-        x3 = Conv2D(n_filter, (3, 3), dilation_rate=(18 * rate_scale, 18 * rate_scale), padding="same")(x)
+        x3 = Conv2D(
+            n_filter,
+            (3, 3),
+            dilation_rate=(18 * rate_scale, 18 * rate_scale),
+            padding="same",
+        )(x)
         x3 = BatchNormalization()(x3)
 
         x4 = Conv2D(n_filter, (3, 3), padding="same")(x)
@@ -129,7 +174,7 @@ class ResUnetPlusPlus(ModelBuilder):
         """
         g: Output of Parallel Encoder block
         x: Output of Previous Decoder block
-        activation = last activation  layer type 
+        activation = last activation  layer type
         """
 
         filters = x.shape[-1]

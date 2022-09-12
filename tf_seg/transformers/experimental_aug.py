@@ -64,11 +64,23 @@ def tf_random_crop(image, mask, channels=(3, 3), name=None, seed=48, crop_percen
         i_size = gen_math_ops.cast((h, w, channels[0]), tf.int32)
         m_size = gen_math_ops.cast((h, w, channels[1]), tf.int32)
 
-        check = control_flow_ops.Assert(math_ops.reduce_all(shape >= i_size), ["Need value.shape >= size, got ", shape, i_size], summarize=1000)
+        check = control_flow_ops.Assert(
+            math_ops.reduce_all(shape >= i_size),
+            ["Need value.shape >= size, got ", shape, i_size],
+            summarize=1000,
+        )
 
         shape = control_flow_ops.with_dependencies([check], shape)
         limit = shape - i_size + 1
-        offset = random_uniform(array_ops.shape(shape), dtype=i_size.dtype, maxval=i_size.dtype.max, seed=seed) % limit
+        offset = (
+            random_uniform(
+                array_ops.shape(shape),
+                dtype=i_size.dtype,
+                maxval=i_size.dtype.max,
+                seed=seed,
+            )
+            % limit
+        )
 
         m = array_ops.slice(mask, offset, m_size, name="image_crop")
         i = array_ops.slice(image, offset, i_size, name="mask_crop")
@@ -77,14 +89,19 @@ def tf_random_crop(image, mask, channels=(3, 3), name=None, seed=48, crop_percen
 
 
 @jax.jit
-def jax_random_crop(image, mask, image_crop_sizes=[512, 512, 3], mask_crop_sizes=[512, 512, 3]):
+def jax_random_crop(
+    image, mask, image_crop_sizes=[512, 512, 3], mask_crop_sizes=[512, 512, 3]
+):
 
     image_shape = image.shape
     crop_sizes = image_crop_sizes
     random_keys = jax.random.split(key, len(crop_sizes))
 
     # print(image_crop_size,mask_crop_size)
-    slice_starts = [jax.random.randint(k, (), 0, img_size - crop_size + 1) for k, img_size, crop_size in zip(random_keys, image_shape, crop_sizes)]
+    slice_starts = [
+        jax.random.randint(k, (), 0, img_size - crop_size + 1)
+        for k, img_size, crop_size in zip(random_keys, image_shape, crop_sizes)
+    ]
     i_out = jax.lax.dynamic_slice(image, slice_starts, image_crop_sizes)
     m_out = jax.lax.dynamic_slice(mask, slice_starts, mask_crop_sizes)
 

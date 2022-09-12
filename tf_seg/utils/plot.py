@@ -19,12 +19,14 @@ def plot_confusion_matrix(cm, class_names):
     ----------
     cm :(array, shape = [n, n])
         a confusion matrix of integer classes
-    class_names (array, shape = [n]): 
+    class_names (array, shape = [n]):
         String names of the integer classes
-    
+
     """
     # normalize confusion matrix
-    cm_normalized = np.around(cm.astype("float") / cm.sum(axis=1)[:, np.newaxis], decimals=2)
+    cm_normalized = np.around(
+        cm.astype("float") / cm.sum(axis=1)[:, np.newaxis], decimals=2
+    )
 
     figure = plt.figure(figsize=(8, 8))
     plt.imshow(cm_normalized, interpolation="nearest", cmap=plt.cm.Blues)
@@ -53,8 +55,12 @@ def confusion_matrix_to_iou_recall_precision(cm):
     Confusion matrix has switched axes when taken from *total_cm* !!
     """
     with tf.name_scope("compute_iou_recall_precision") as scope:
-        sum_over_col = tf.reduce_sum(cm, axis=1)  # axes are switched for the total_cm within MeanIoU
-        sum_over_row = tf.reduce_sum(cm, axis=0)  # axes are switched for the total_cm within MeanIoU
+        sum_over_col = tf.reduce_sum(
+            cm, axis=1
+        )  # axes are switched for the total_cm within MeanIoU
+        sum_over_row = tf.reduce_sum(
+            cm, axis=0
+        )  # axes are switched for the total_cm within MeanIoU
         tp = tf.linalg.diag_part(cm)
         fp = sum_over_row - tp
         fn = sum_over_col - tp

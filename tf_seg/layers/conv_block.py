@@ -1,4 +1,10 @@
-from tensorflow.keras.layers import Layer, Activation, BatchNormalization, Conv2D, MaxPooling2D
+from tensorflow.keras.layers import (
+    Layer,
+    Activation,
+    BatchNormalization,
+    Conv2D,
+    MaxPooling2D,
+)
 
 
 class ConvUnet(Layer):

@@ -26,7 +26,9 @@ class Transformer:
         self.config = config
         self.transformer = transformers
         self.name = name
-        self.transformer_object = wrapper_class_lib[config["aug_type"]](self.transformer, **kwargs)
+        self.transformer_object = wrapper_class_lib[config["aug_type"]](
+            self.transformer, **kwargs
+        )
 
     @tf.function
     def __call__(self, image: tf.Tensor, mask: tf.Tensor) -> List[tf.Tensor]:

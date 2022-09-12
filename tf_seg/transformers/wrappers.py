@@ -31,7 +31,9 @@ class AlbumentatiosWrapper:
 
     @tf.function
     def __call__(self, image, mask):
-        aug_img, aug_mask = tf.numpy_function(func=self._aug_albument, inp=[image, mask], Tout=self.output_type)
+        aug_img, aug_mask = tf.numpy_function(
+            func=self._aug_albument, inp=[image, mask], Tout=self.output_type
+        )
         return aug_img, aug_mask
 
     def transform(self, image, mask):

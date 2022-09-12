@@ -2,7 +2,14 @@ from tensorflow.keras.layers import Layer, Activation, BatchNormalization, Conv2
 
 
 class ResidualLayer(Layer):
-    def __init__(self, n_filter, kernel_size=3, activation="relu", padding="same", name="residual"):
+    def __init__(
+        self,
+        n_filter,
+        kernel_size=3,
+        activation="relu",
+        padding="same",
+        name="residual",
+    ):
         super().__init__(name=name)
         assert n_filter is not None, "n_filter must be specified"
 
@@ -14,13 +21,19 @@ class ResidualLayer(Layer):
     def build(self, input_shape):
         self.activation = Activation(self.activation_name)
 
-        self.conv1 = Conv2D(filters=self.n_filter, kernel_size=self.kernel_size, padding=self.padding)
+        self.conv1 = Conv2D(
+            filters=self.n_filter, kernel_size=self.kernel_size, padding=self.padding
+        )
         self.batch_norm1 = BatchNormalization()
 
-        self.conv2 = Conv2D(filters=self.n_filter, kernel_size=self.kernel_size, padding=self.padding)
+        self.conv2 = Conv2D(
+            filters=self.n_filter, kernel_size=self.kernel_size, padding=self.padding
+        )
         self.batch_norm2 = BatchNormalization()
 
-        self.conv_skip = Conv2D(filters=self.n_filter, kernel_size=(1, 1), padding=self.padding)
+        self.conv_skip = Conv2D(
+            filters=self.n_filter, kernel_size=(1, 1), padding=self.padding
+        )
         self.batch_norm_skip = BatchNormalization()
 
         self.add = Add()

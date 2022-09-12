@@ -11,11 +11,12 @@ from tf_seg.config import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 logger.setLevel(logging.INFO)
 
+
 def get_config(
     config_filename: str,
     config_path: Optional[Union[Path, str]] = None,
     config_file_extension: Optional[str] = CONFIG_FILE_EXTENSION,
-    config_store_path: Union[Path, str] = CONFIG_STORE_PATH
+    config_store_path: Union[Path, str] = CONFIG_STORE_PATH,
 ) -> Union[DictConfig, ListConfig]:
 
     """
@@ -38,13 +39,15 @@ def get_config(
         Configurable parameters.
 
     """
-    
+
     assert os.path.isdir(config_store_path), f"{config_store_path} is not a directory"
 
     if config_path is None:
-        config_path = Path(f"{config_store_path}/{config_filename}{config_file_extension}")
+        config_path = Path(
+            f"{config_store_path}/{config_filename}{config_file_extension}"
+        )
 
-    logger.info(f"Loading config from {config_path}") 
+    logger.info(f"Loading config from {config_path}")
     config = OmegaConf.load(config_path)
     try:
         config = extact_config(config)
@@ -54,7 +57,9 @@ def get_config(
     return config
 
 
-def extact_config(config: Union[DictConfig, ListConfig]) -> Union[DictConfig, ListConfig]:
+def extact_config(
+    config: Union[DictConfig, ListConfig]
+) -> Union[DictConfig, ListConfig]:
     """ "Extract parent base config and merge with child configs"""
 
     first_config_keys = list(config.keys())
@@ -117,6 +122,3 @@ def load_base_config(config):
 
     else:
         raise ValueError("load_style is not valid")
-
-
-

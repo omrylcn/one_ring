@@ -5,9 +5,6 @@ from typing import Union
 from omegaconf import DictConfig, ListConfig
 
 
-
-
-
 def load_module_style_transformer(config: Union[DictConfig, ListConfig]):
     """Load python module style transformer"""
 
@@ -26,7 +23,9 @@ def load_module_style_transformer(config: Union[DictConfig, ListConfig]):
             module = string.split(":")[0]
             function_name = string.split(":")[1]
             module_file_path = module.replace(".", "/") + ".py"
-            assert os.path.isfile(module_file_path), f"{module_file_path} module file not found"
+            assert os.path.isfile(
+                module_file_path
+            ), f"{module_file_path} module file not found"
 
             # load module
             m = importlib.import_module(module)
