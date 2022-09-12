@@ -22,5 +22,5 @@ backup
 ~
 tf_seg/config/_config.py
 workspace.ipynb
-config/test.yaml
+#config/test.yaml
 
