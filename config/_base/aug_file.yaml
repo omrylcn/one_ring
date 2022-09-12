@@ -1,6 +1,6 @@
 #load_style: file # or module # it find automatically
 aug_type: albumentations
-train: # if load_style is modeule, get function from like this => aug.test:transforms
+train: # if load_style is module, get function from like this => aug.test:transforms
   resize: { height: 300, width: 300 }
   one_of: { transforms: [horizontal_flip, vertical_flip], p: 0.3 }
   random_rotate_90:

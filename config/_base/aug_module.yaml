@@ -1,0 +1,11 @@
+load_style: module # or module # it find automatically
+aug_type: albumentations
+train: 
+  path: tf_seg.transformers.albumentations:get_train_transform
+  parameters: {}
+val: 
+  path: tf_seg.transformers.albumentations:get_test_transform
+  parameters: {}
+test:
+  path: tf_seg.transformers.albumentations:get_test_transform
+  parameters: {}
