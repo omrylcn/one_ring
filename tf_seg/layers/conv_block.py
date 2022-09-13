@@ -41,3 +41,8 @@ class ConvUnet(Layer):
             x = self.pool(x)
             return c, x
         return c
+        
+    def get_config(self):
+        config = super(ConvUnet,self).get_config()
+        config.update({"n_filter": self.n_filter, "activation": self.activation})
+        return config
