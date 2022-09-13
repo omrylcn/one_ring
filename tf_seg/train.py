@@ -16,6 +16,8 @@ from tf_seg.losses import *
 from tf_seg.metrics import *
 from tf_seg.utils import snake_case_to_pascal_case
 
+import pickle
+
 
 class Trainer:
     "Trainer class for training a model"
@@ -45,7 +47,8 @@ class Trainer:
             keras Callbacks for training
 
         """
-        self.config = config
+        self.all_config = config.copy()
+        self.config = config["trainer"].copy()
         self._model = model
         self.train_data = train_data
         self.val_data = val_data
@@ -66,7 +69,7 @@ class Trainer:
             if len(self.callbacks) > 0:
                 for callback in self.callbacks:
                     assert isinstance(callback, Callback)
-        
+
     def _check_trainer_params(self):
         "Check trainer config parameters"
         assert self.config["epochs"] > 0
@@ -76,7 +79,7 @@ class Trainer:
 
     @property
     def callbacks(self) -> None:
-        " Convert  list of callbacks "
+        "Convert  list of callbacks"
         if self._callbacks:
             assert isinstance(self._callbacks, (List, Dict))
             if type(self._callbacks) == List:
@@ -88,7 +91,6 @@ class Trainer:
 
     @property
     def model(self):
-        print("test")
         self._check_trainer_params()
 
         optimizer_conf = self.config["optimizer"]
@@ -100,26 +102,45 @@ class Trainer:
         self._model.compile(optimizer=optimizer, loss=losses, metrics=metrics)
         return self._model
 
-    def train(self):
+    def train(self, continue_training: bool = False) -> None:
         "Train tf keras model"
 
-        self.model.fit(
-            self.train_data,
-            epochs=self.config["epochs"],
-            callbacks=self.callbacks,
-            validation_data=self.val_data,
-        )
+        # TODO: merge continue training and first histories
+        if continue_training and self._model._is_compiled:
+            self.history = self._model.fit(self.train_data, epochs=self.config["epochs"], callbacks=self.callbacks, validation_data=self.val_data)
+
+        else:
+            self.history = self.model.fit(self.train_data, epochs=self.config["epochs"], callbacks=self.callbacks, validation_data=self.val_data)
 
     def evaluate(self) -> None:
         if self.val_data:
-            self.model.evaluate(self.val_data)
+            self._model.evaluate(self.val_data)
         else:
             raise ValueError("Validation data is not provided")
 
-    def save(self, path: str, filename: str) -> None:
-        assert os.path.exists(path), f"Path: {path} does not exist"
+    def save(self, path: str) -> None:
+        """
+        Saves the model to Tensorflow SavedModel
 
-        self.model.save(filename)
+        Parameters
+        ----------
+        path: str
+            Path to save model
+        filename: str, default: None
+            Filename to save model
+
+        """
+
+        self._model.save(path)
+
+        assert os.path.exists(path), f"Path: {path} does not exist"
+        with open(path + "/meta_file.pkl", "wb") as f:
+            pickle.dump(self.all_config, f)
+    
+    def load(self,path:str):
+        """Load model from Tensorflow SavedModel"""
+        
+        self._model = tf.keras.models.load_model(path)
 
     def test(self, data) -> None:
-        self.model.evaluate(data)
+        self._model.evaluate(data)
