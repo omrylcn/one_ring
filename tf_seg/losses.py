@@ -18,9 +18,7 @@ from tensorflow.keras.losses import BinaryCrossentropy, CategoricalCrossentropy
 class LossFunctionWrapper(tf.keras.losses.Loss):
     """Wraps a loss function in the `Loss` class."""
 
-    def __init__(
-        self, fn, reduction=tf.keras.losses.Reduction.AUTO, name=None, **kwargs
-    ):
+    def __init__(self, fn, reduction=tf.keras.losses.Reduction.AUTO, name=None, **kwargs):
         # convert numpy tensorflow doc style to numpy doc style
 
         """Initializes `LossFunctionWrapper` instance.
@@ -72,9 +70,7 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
 
 
 @tf.function()
-def dice_coef(
-    y_true: TensorLike, y_pred: TensorLike, const: FloatTensorLike = K.epsilon()
-) -> Tensor:
+def dice_coef(y_true: TensorLike, y_pred: TensorLike, const: FloatTensorLike = K.epsilon()) -> Tensor:
     """
     Sørensen–Dice coefficient for 2-d samples.
 
@@ -110,9 +106,7 @@ def dice_coef(
 
 
 @tf.function()
-def dice_loss(
-    y_true: TensorLike, y_pred: TensorLike, const: FloatTensorLike = K.epsilon()
-) -> Tensor:
+def dice_loss(y_true: TensorLike, y_pred: TensorLike, const: FloatTensorLike = K.epsilon()) -> Tensor:
     """Sørensen–Dice Loss function for 2-d samples."""
 
     loss = 1 - dice_coef(y_true, y_pred)
@@ -193,9 +187,7 @@ def tversky_coef(
     false_pos = tf.reduce_sum((1 - y_true_pos) * y_pred_pos)
 
     # TP/(TP + a*FN + b*FP); a+b = 1
-    coef_val = (true_pos + const) / (
-        true_pos + alpha * false_neg + (1 - alpha) * false_pos + const
-    )
+    coef_val = (true_pos + const) / (true_pos + alpha * false_neg + (1 - alpha) * false_pos + const)
 
     return coef_val
 
@@ -294,9 +286,7 @@ def focal_tversky(
     y_true = tf.squeeze(y_true)
 
     # (Tversky loss)**(1/gamma)
-    loss_val = tf.math.pow(
-        (1 - tversky_coef(y_true, y_pred, alpha=alpha, const=const)), 1 / gamma
-    )
+    loss_val = tf.math.pow((1 - tversky_coef(y_true, y_pred, alpha=alpha, const=const)), 1 / gamma)
 
     return loss_val
 
@@ -309,6 +299,4 @@ class FocalTverskyLoss(LossFunctionWrapper):
         gamma: FloatTensorLike = 4 / 3,
         const: FloatTensorLike = K.epsilon(),
     ):
-        super().__init__(
-            fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const
-        )
+        super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const)

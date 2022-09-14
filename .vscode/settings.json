@@ -5,7 +5,9 @@
     ],
     "python.linting.flake8Enabled": true,
     "python.linting.enabled": true,
+    "python.formatting.blackPath": "black",
     "python.formatting.blackArgs": [
         "--line-length=200"
-    ]
+    ],
+    "python.languageServer": "Jedi"
 }

@@ -21,6 +21,6 @@ addons
 backup
 ~
 tf_seg/config/_config.py
-workspace.ipynb
+#workspace.ipynb
 #config/test.yaml
 
