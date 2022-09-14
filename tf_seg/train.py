@@ -6,19 +6,25 @@ trainer class yapısı
 - 
 """
 import os
+import pickle
+import tf2onnx
+
 from typing import Union, Optional, List, Dict
 from omegaconf import DictConfig, ListConfig
-from tensorflow.keras import Model
+
+from tensorflow.keras.models import Model, load_model
 from tensorflow.data import Dataset
 from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.optimizers import *
+
 from tf_seg.losses import *
 from tf_seg.metrics import *
 from tf_seg.utils import snake_case_to_pascal_case
+from tf_seg.deploy import export_convert
 
-import pickle
 
-
+# TODO : add logger
+# TODO : change default values from constant.py
 class Trainer:
     "Trainer class for training a model"
 
@@ -31,7 +37,6 @@ class Trainer:
         callbacks: Optional[Union[Dict[str, Callback], List[Callback]]] = None,
     ) -> None:
         """
-
 
         Parameters
         ----------
@@ -112,13 +117,16 @@ class Trainer:
         else:
             self.history = self.model.fit(self.train_data, epochs=self.config["epochs"], callbacks=self.callbacks, validation_data=self.val_data)
 
+        # if self.config["save_model"]:
+        #     self.save(path= self.config["save_name"])
+
     def evaluate(self) -> None:
         if self.val_data:
             self._model.evaluate(self.val_data)
         else:
             raise ValueError("Validation data is not provided")
 
-    def save(self, path: str) -> None:
+    def save(self, path: str, meta_data_name="meta_data.pkl", onnx_name="model.onnx") -> None:
         """
         Saves the model to Tensorflow SavedModel
 
@@ -132,15 +140,70 @@ class Trainer:
         """
 
         self._model.save(path)
+        self._save_meta_data(path, meta_data_name)
 
+        if self.config["deploy_onnx"]:
+            self._export_onnx(model_name=path, onnx_name=onnx_name)
+
+    def _export_onnx(self, model_name: str, onnx_name: str, opset: int = 13)-> None:
+        """
+        Export model to onnx
+
+        Parameters
+        ----------
+        model_name: str
+            Path to model
+        onnx_name: str
+            Name of onnx file
+        opset: int, default: 13
+           opset version for onnx
+
+        """
+
+        export_convert(model_name, onnx_name, opset=opset, optimizer="onnx")
+
+    def _save_meta_data(self, path: str, filename: str) -> None:
+        "Save meta data to model path"
         assert os.path.exists(path), f"Path: {path} does not exist"
-        with open(path + "/meta_file.pkl", "wb") as f:
+        with open(path + "/" + filename, "wb") as f:
             pickle.dump(self.all_config, f)
-    
-    def load(self,path:str):
-        """Load model from Tensorflow SavedModel"""
-        
-        self._model = tf.keras.models.load_model(path)
+
+    def load(self, path: str, checking_parameters: bool = True) -> None:
+        """
+        Load model from Tensorflow SavedModel
+
+        Parameters
+        ----------
+        path: str
+            Path to load model
+        checking_parameters: bool, default: True
+            Check parameters of model and config file
+
+        """
+        try:
+            _model = load_model(path)
+            if checking_parameters:
+                config = self.all_config["model"]
+                print(config)
+                print(config["input_shape"])
+
+                # input shape check config and loaded model
+                assert list(config["input_shape"]) == list(_model.input_shape[1:]), f"Input shape of model is not equal to config input shape {config['input_shape']} != {_model.input_shape[1:]}"
+
+                # output shape check config and loaded model
+                config_output_shape = list(config["input_shape"])
+                config_output_shape[-1] = config["output_size"]
+                assert config_output_shape == list(_model.output_shape[1:])
+
+                # final activation check config and loaded model
+                model_last_activation = _model.layers[-1].activation.__name__
+                config_last_activation = config["final_activation"]
+                assert model_last_activation == config_last_activation, f"Final activation of model is not equal to config final activation {config_last_activation} != {model_last_activation}"
+
+            self._model = _model
+
+        except:
+            raise ValueError("Model could not be loaded")
 
     def test(self, data) -> None:
         self._model.evaluate(data)

@@ -49,6 +49,8 @@ trainer:
   losses: [categorical_crossentropy]
   epochs: 20
   batch_size: 32
+  verbose: 1
+  deploy_onnx: false
 
 callbacks:
   base: null
