@@ -1,9 +1,10 @@
-from typing import Union
-from omegaconf import DictConfig, ListConfig
+from typing import Union,Dict
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from tf_seg.utils import load_module_style_transformer, load_file_style_transformer
 
 # from tf_seg.transformers.wrappers import AlbumentatiosWrapper
 from tf_seg.transformers.transformer import Transformer
+from tf_seg.transformers.numpy_func import normalize
 
 
 # def load_file_style_transformer():
@@ -19,7 +20,7 @@ load_style_lib = {
 
 
 # TODO : design transformers type
-def get_transformer(config: Union[DictConfig, ListConfig]) -> dict:
+def get_transformer(config: Union[Dict,DictConfig, ListConfig]) -> dict:
     """
     Get data augmentation transformers from config file.
 
@@ -29,6 +30,8 @@ def get_transformer(config: Union[DictConfig, ListConfig]) -> dict:
         a dict with transformers
 
     """
+    if type(config) == dict:
+        config = OmegaConf.create(config)
 
     load_style = config.load_style
     aug_config = config.copy()

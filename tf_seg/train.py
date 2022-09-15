@@ -117,8 +117,9 @@ class Trainer:
         else:
             self.history = self.model.fit(self.train_data, epochs=self.config["epochs"], callbacks=self.callbacks, validation_data=self.val_data)
 
-        # if self.config["save_model"]:
-        #     self.save(path= self.config["save_name"])
+        if self.config["save_model"]:
+            # TODO: add logger
+            self.save(path= self.config["save_name"])
 
     def evaluate(self) -> None:
         if self.val_data:
