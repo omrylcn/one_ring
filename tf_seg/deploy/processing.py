@@ -29,11 +29,8 @@ class AlbumentationsPreprocessor:
     def __init__(self, config: Union[Dict, DictConfig, ListConfig])->None:
         #self.config = config
         #print("pre",config)
-        if config["preprocessor_load_style"] == "module":
-            self.transform = get_test_transform_from_string(config["preprocessor_path"])(image_size=config["image_size"])
-        else:
-            raise ValueError(f"preprocessor_load_style not supported {config['preprocessor_load_style']}")
-
+        self.transform = get_test_transform_from_string(config["preprocessor_path"])(image_size=config["image_size"])
+        
     def __call__(self, image: TensorLike)->np.ndarray:
         
         if isinstance(image, np.ndarray):
@@ -44,6 +41,9 @@ class AlbumentationsPreprocessor:
         
         else:
             raise ValueError(f"image type is not supported , {type(image)} ")
+        
+        if image.ndim == 4 and image.shape[0] == 1:
+            image = image[0]
           
         return self.transform(image=image)["image"]
         
