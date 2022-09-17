@@ -4,10 +4,11 @@ tf_seg/**/__pycache__
 
 
 appendix
-
+dataset/**
 dataset/camvid
 dataset/road
 dataset/test_data
+
 
 dataset_v1.0
 dataset_v2.0

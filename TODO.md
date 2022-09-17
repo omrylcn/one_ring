@@ -23,3 +23,6 @@
 - [ ] Add more learning rate schedulers like pytorch learning rate schedulers
 
     - check link : https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html#StepLR
+
+
+- [ ] Add threading  for deploy albumentation preprocessor  and onnx model, it is not running batch size > 1

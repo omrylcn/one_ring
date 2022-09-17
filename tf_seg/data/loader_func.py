@@ -24,12 +24,8 @@ def get_camvid_data_loader(
 
     data_loader_list = []
     if train_data:
-        train_image_paths = sorted(
-            glob(os.path.join(data_config["path"], "train/*.png"))
-        )
-        train_mask_paths = sorted(
-            glob(os.path.join(data_config["path"], "train_labels/*.png"))
-        )
+        train_image_paths = sorted(glob(os.path.join(data_config["path"], "train/*.png")))
+        train_mask_paths = sorted(glob(os.path.join(data_config["path"], "train_labels/*.png")))
 
         train_data_loader = DataLoader(
             train_image_paths,
@@ -49,9 +45,7 @@ def get_camvid_data_loader(
 
     if val_data:
         val_image_paths = sorted(glob(os.path.join(data_config["path"], "val/*.png")))
-        val_mask_paths = sorted(
-            glob(os.path.join(data_config["path"], "val_labels/*.png"))
-        )
+        val_mask_paths = sorted(glob(os.path.join(data_config["path"], "val_labels/*.png")))
 
         val_data_loader = DataLoader(
             val_image_paths,
@@ -70,9 +64,7 @@ def get_camvid_data_loader(
 
     if test_data:
         test_image_paths = sorted(glob(os.path.join(data_config["path"], "test/*.png")))
-        test_mask_paths = sorted(
-            glob(os.path.join(data_config["path"], "test_labels/*.png"))
-        )
+        test_mask_paths = sorted(glob(os.path.join(data_config["path"], "test_labels/*.png")))
 
         test_data_loader = DataLoader(
             test_image_paths,
@@ -121,19 +113,13 @@ def get_custom_data_loader(
 
     """
 
-    image_output_type = getattr(
-        tf, data_config["output_type"][0].split(".")[-1]
-    )  # objectinput must be like tf.float32 string
+    image_output_type = getattr(tf, data_config["output_type"][0].split(".")[-1])  # objectinput must be like tf.float32 string
     mask_output_type = getattr(tf, data_config["output_type"][1].split(".")[-1])
 
     data_loader_list = []
     if train_data:
-        train_image_paths = sorted(
-            glob(os.path.join(data_config["path"], "train_images/*"))
-        )
-        train_mask_paths = sorted(
-            glob(os.path.join(data_config["path"], "train_masks/*"))
-        )
+        train_image_paths = sorted(glob(os.path.join(data_config["path"], "train_images/*")))
+        train_mask_paths = sorted(glob(os.path.join(data_config["path"], "train_masks/*")))
         _check_paths(train_image_paths, train_mask_paths, "train data")
 
         train_data_loader = DataLoader(
@@ -153,9 +139,7 @@ def get_custom_data_loader(
         data_loader_list.append(train_data_loader)
 
     if val_data:
-        val_image_paths = sorted(
-            glob(os.path.join(data_config["path"], "val_images/*"))
-        )
+        val_image_paths = sorted(glob(os.path.join(data_config["path"], "val_images/*")))
         val_mask_paths = sorted(glob(os.path.join(data_config["path"], "val_masks/*")))
         _check_paths(val_image_paths, val_mask_paths, "val data")
 
@@ -175,12 +159,8 @@ def get_custom_data_loader(
         data_loader_list.append(val_data_loader)
 
     if test_data:
-        test_image_paths = sorted(
-            glob(os.path.join(data_config["path"], "test_images/*"))
-        )
-        test_mask_paths = sorted(
-            glob(os.path.join(data_config["path"], "test_masks/*"))
-        )
+        test_image_paths = sorted(glob(os.path.join(data_config["path"], "test_images/*")))
+        test_mask_paths = sorted(glob(os.path.join(data_config["path"], "test_masks/*")))
         _check_paths(test_image_paths, test_mask_paths, "test data")
 
         test_data_loader = DataLoader(
@@ -225,6 +205,4 @@ def _check_paths(image_paths: List[str], mask_paths: List[str], info: str) -> No
     if len(mask_paths) == 0:
         raise FileNotFoundError(f"{info} mask paths {mask_paths} is empty")
 
-    assert len(image_paths) == len(
-        mask_paths
-    ), f"Number of {info} images and masks are not equal {len(image_paths)} != {len(mask_paths)}"
+    assert len(image_paths) == len(mask_paths), f"Number of {info} images and masks are not equal {len(image_paths)} != {len(mask_paths)}"
