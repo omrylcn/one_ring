@@ -11,6 +11,8 @@ import tensorflow as tf
 import random
 import os
 from tf_seg.base import DataLoaderAbstract
+from tf_seg.transformers import tf_normalize
+
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -213,16 +215,14 @@ class DataLoader(DataLoaderAbstract):
 
             # provide  all data same sizes
             if self.transform_func is None:
-                # print("no")
                 image, mask = self._resize_data(image, mask)
-
+           
             if self.normalizing:
-                tf.image.per_image_standardization(image)
-                # tf.per_image_standardization(mask)
-
+                image = tf.image.per_image_standardization(image)
+                #image = tf_normalize(image)
+           
             image = tf.cast(image, tf.float32)
             mask = tf.cast(mask, tf.float32)
-
             return image, mask
 
         self._sequnce_function = _sequnce_function
