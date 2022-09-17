@@ -188,8 +188,9 @@ class Inferencer:
         return normalize(image, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 
     def predict(self, image: TensorLike, input_name: str = "input"):
-        x = self.pre_process(image)
-        x = self.model(image)
+        self.input_image = self.pre_process(image)
+
+        self.pred_image = self.model(self.input_image)
 
         # x = self.post_process(x)
-        return x
+        return self.pred_image

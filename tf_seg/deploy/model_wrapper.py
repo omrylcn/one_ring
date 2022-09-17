@@ -66,7 +66,7 @@ class OnnxModel(object):
         else:
             raise ValueError(f"Error in input shape {x.shape}")
 
-        print(x.shape)
+       
         x = self.model.run(None, {input_name: x})[0]
         return x
 
