@@ -15,3 +15,9 @@ CONFIG_LOAD_STYLE_LIB = [".yaml", ".yml", ".py"]
 # -------------------#
 # logger part
 LOGGER_NAME = "tf_seg"
+
+
+# -------------------#
+# deploy
+MODEL_TYPE_LIB = ["tf", "onnx"]
+ONNX_PROVIDERS = {"gpu":"CUDAExecutionProvider", "cpu":"CPUExecutionProvider"}
