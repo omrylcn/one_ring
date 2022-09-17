@@ -29,6 +29,7 @@ class Inferencer:
         postprocessor_path: str = None,
         seed: int = 48,
         device: bool = "cpu",
+        **kwargs,
     ):
         # print("config", config)
         """
@@ -63,6 +64,7 @@ class Inferencer:
         self.normalizing = normalizing
         self.seed = seed
         self.device = device
+        self.kwargs = kwargs
 
         config = self.config
 
@@ -96,6 +98,7 @@ class Inferencer:
         config["postprocessor_path"] = self.postprocessor_path
         config["device"] = self.device
         config["seed"] = self.seed
+        config.update(self.kwargs)
 
         return config
 
@@ -192,5 +195,5 @@ class Inferencer:
 
         self.pred_image = self.model(self.input_image)
 
-        # x = self.post_process(x)
-        return self.pred_image
+        self.pred_mask, self.pred_image = self.post_process(self.pred_image)
+        return self.pred_image, self.pred_mask

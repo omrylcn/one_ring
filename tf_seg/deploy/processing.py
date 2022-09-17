@@ -46,22 +46,33 @@ class AlbumentationsPreprocessor:
             image = image[0]
           
         return self.transform(image=image)["image"]
-        
+
+
 class TensorFlowPreprocessor:
+    """
+    Not implemented yet. This is for preprocessing images using tensorflow functions.
+
+    """
     def __init__(self, config: Union[Dict, DictConfig, ListConfig]):
         self.config = config
 
     def __call__(self, image):
-        pass
+        
+        return image
 
 
 # Postprocessor
 class VanillaPostprocessor:
+    """
+    Standard postprocessing for segmentation models. It return binary mask and  pred image
+    """
     def __init__(self, config: Union[Dict, DictConfig, ListConfig]):
         self.config = config
+        self.threshold = config["threshold"]
 
-    def __call__(self, image):
-        pass
+    def __call__(self, image: TensorLike)->tuple:
+
+        return image > self.threshold, image
 
 
 preprocessor_lib = {"albumentations": AlbumentationsPreprocessor, "tensorflow": TensorFlowPreprocessor}
