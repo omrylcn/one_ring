@@ -1,4 +1,4 @@
-from typing import Dict, Union, Optional
+from typing import Dict, Union, Optional, List, Tuple
 from omegaconf import DictConfig, ListConfig
 from tf_seg.deploy import preprocessor_lib, postprocessor_lib
 from tf_seg.utils import TensorLike
@@ -8,7 +8,8 @@ from tensorflow.keras.models import load_model
 import os
 import numpy as np
 from tf_seg.transformers import normalize
-
+from tf_seg.config import MODEL_TYPE_LIB
+from tf_seg.deploy import model_wrapper_lib
 
 
 class Inferencer:
@@ -16,29 +17,87 @@ class Inferencer:
     Inference class for tf_seg models
     """
 
-    def __init__(self, config: Union[Dict, DictConfig, ListConfig]):
+    def __init__(
+        self,
+        image_size: Union[List[int], Tuple[int]],
+        normalizing: bool,
+        model_type: str,
+        model_path: str,
+        preprocessor_type: str,
+        postprocessor_type: str,
+        preprocessor_path: str = None,
+        postprocessor_path: str = None,
+        seed: int = 48,
+        device: bool = "cpu",
+    ):
         # print("config", config)
         """
         Parameters
         ----------
-        config : Union[Dict, DictConfig, ListConfig]
-            Configuration for the inferencer
+        image_size : Union[List[int], Tuple[int]]
+            Size of the input image
+        normalizing : bool
+            Whether to normalize the input image
+        model_type : str, {"tf", "onnx"}
+            Type of the model
+        model_path : str
+            Path of the model folder
+        preprocessor_type : str
+            Type of the preprocessor object that will be used to process data before prediction
+        preprocessor_path : str
+            Path of the preprocessor object
+        postprocessor_type : str
+            Type of the postprocessor object that will be used to process after prediction
+        postprocessor_path : str
+            Path of the postprocessor object
+
         """
+        self.image_size = image_size
+        self.model_type = model_type
+        self.preprocessor_type = preprocessor_type
+        self.preprocessor_path = preprocessor_path
+        self.model_type = model_type
+        self.model_path = model_path
+        self.postprocessor_type = postprocessor_type
+        self.postprocessor_path = postprocessor_path
+        self.normalizing = normalizing
+        self.seed = seed
+        self.device = device
 
-        self.config = config
-
-        # load preprocessor
-        preprocessor_type = config["preprocessor_type"]
-        assert preprocessor_type in preprocessor_lib.keys(), f"preprocessor_type {preprocessor_type} not in {preprocessor_lib.keys()}"
-        self._preprocessor = preprocessor_lib[preprocessor_type](config)
+        config = self.config
 
         # load model
         self._model = self.load(config)
+        self._preprocessor = None
+        self._postprocessor = None
+
+        # load preprocessor
+        preprocessor_type = config["preprocessor_type"]
+        if preprocessor_type:
+            assert preprocessor_type in preprocessor_lib.keys(), f"preprocessor_type {preprocessor_type} not in {preprocessor_lib.keys()}"
+            self._preprocessor = preprocessor_lib[preprocessor_type](config)
 
         # load postprocessor
         postprocessor_type = config["postprocessor_type"]
-        assert postprocessor_type in postprocessor_lib.keys(), f"postprocessor_type {postprocessor_type} not in {postprocessor_lib.keys()}"
-        self._postprocessor = postprocessor_lib[postprocessor_type](config)
+        if postprocessor_type:
+            assert postprocessor_type in postprocessor_lib.keys(), f"postprocessor_type {postprocessor_type} not in {postprocessor_lib.keys()}"
+            self._postprocessor = postprocessor_lib[postprocessor_type](config)
+
+    @property
+    def config(self):
+        config = {}
+        config["image_size"] = self.image_size
+        config["model_type"] = self.model_type
+        config["model_path"] = self.model_path
+        config["normalizing"] = self.normalizing
+        config["preprocessor_type"] = self.preprocessor_type
+        config["preprocessor_path"] = self.preprocessor_path
+        config["postprocessor_type"] = self.postprocessor_type
+        config["postprocessor_path"] = self.postprocessor_path
+        config["device"] = self.device
+        config["seed"] = self.seed
+
+        return config
 
     def _check_params(self):
         pass
@@ -58,33 +117,13 @@ class Inferencer:
             Loaded model
 
         """
+        # TODO: add logger to inform model is loaded
+
         config = config if config else self.config
 
-        # TODO: get support model list format from constant.py
-        assert config["model_type"] in ["tf", "onnx"], f"model_type {config['model_type']} not supported"
+        assert config["model_type"] in MODEL_TYPE_LIB, f"model_type {config['model_type']} not supported"
+        self.model = model_wrapper_lib[config["model_type"]](**config)
 
-        if config["model_type"] == "tf":
-            model_path = config["model_path"]
-            model = tf.keras.models.load_model(model_path)
-            return model
-
-        elif config["model_path"].split(".")[-1] == "onnx":
-            model_path = config["model_path"]
-
-        else:
-            model_path = os.path.join(config["model_path"], "model.onnx")
-
-        sess = ort.InferenceSession(model_path)
-        return sess
-
-    @property
-    def prediction_model(self):
-        if self.config["model_type"] == "tf":
-            return self._model.predict
-
-        # onnxruntime
-        else:
-            return self._model.run
 
     @property
     def preprocessor(self):
@@ -110,19 +149,17 @@ class Inferencer:
 
         """
         # TODO: check data type for model types parameters
-        x = self.preprocessor(x)
-        if self.config["normalize"]:
-            x = self._normalize(x)
 
-        if x.ndim == 3:
-            x = np.expand_dims(x, axis=0)
+        
+        if self.preprocessor:
+            config = self.config
 
-        # convert type
-        #if self.config["model_type"] == "onnx":
-        #    x = x.astype(np.float32)
-        #   
-        #elif self.config["model_type"] == "tf":
-        #    x = tf.cast(x, tf.float32)
+            x = self.preprocessor(x)
+            if config["normalizing"]:
+                x = self._normalize(x)
+
+            if x.ndim == 3:
+                x = np.expand_dims(x, axis=0)
 
         return x
 
@@ -140,7 +177,10 @@ class Inferencer:
         TensorLike
 
         """
-        return self.postprocessor(x)
+        if self.postprocessor:
+            x = self.postprocessor(x)
+        
+        return x
 
     # @tf.function
     def _normalize(self, image: TensorLike):
@@ -149,10 +189,7 @@ class Inferencer:
 
     def predict(self, image: TensorLike, input_name: str = "input"):
         x = self.pre_process(image)
-        if self.config["model_type"] == "tf":
-            x = self.prediction_model(x)
-        else:
-            x = self.prediction_model(None, {input_name: x})[0]
+        x = self.model(image)
 
         # x = self.post_process(x)
         return x
