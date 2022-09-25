@@ -15,7 +15,7 @@ def get_data_loader(
     test_data: bool,
 ) -> Tuple[DataLoader]:
     """Get data loader from config file"""
-    function_name = config.function_name
+    function_name = config["function_name"]
     assert function_name in loader_lib.keys(), f"{function_name} is not in loader_lib"
     loader_function = loader_lib[function_name]
 
