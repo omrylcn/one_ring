@@ -203,8 +203,8 @@ class Trainer:
 
             self._model = _model
 
-        except:
-            raise ValueError("Model could not be loaded")
+        except Exception as e:
+            raise ValueError("Model could not be loaded",e)
 
     def test(self, data) -> None:
         self._model.evaluate(data)

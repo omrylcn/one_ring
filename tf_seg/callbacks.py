@@ -68,6 +68,10 @@ class UpdateBestWeights(Callback):
 
     def on_epoch_end(self, epoch, logs=None) -> None:
         metric = logs[self.metric_name]
+      
+        if type(metric) == np.ndarray:       
+            if len(metric)>1:
+                metric = metric.mean()
         if self.monitor_op(metric, self.best_metric):
             self.best_metric = metric
             self.best_weights = self.model.get_weights()

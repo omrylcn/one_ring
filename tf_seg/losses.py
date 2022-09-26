@@ -13,6 +13,7 @@ import tensorflow as tf
 import tensorflow.keras.backend as K
 from tf_seg.utils.types import FloatTensorLike, TensorLike, Tensor
 from tensorflow.keras.losses import BinaryCrossentropy, CategoricalCrossentropy
+from tf_seg.utils import is_tensor_or_variable
 
 
 class LossFunctionWrapper(tf.keras.losses.Loss):
