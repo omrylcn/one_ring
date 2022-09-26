@@ -25,3 +25,7 @@ tf_seg/config/_config.py
 #workspace.ipynb
 #config/test.yaml
 
+TestResults
+ignis_segmentation.ipynb
+
+ignis
