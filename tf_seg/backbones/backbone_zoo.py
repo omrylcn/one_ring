@@ -113,6 +113,18 @@ layer_cadidates = {
 }
 
 
+deep_labv3_plus_layer_candidates = {
+    "ResNet50": (
+        "conv2_block3_2_relu", # low level feature
+        "conv4_block6_2_relu"
+        ),
+    "MobileNetV2": (
+        "block_3_depthwise_relu", # low level feature
+        "out_relu"
+    )
+    
+}
+
 def get_backbone(
     backbone_name: str,
     weights: str,
