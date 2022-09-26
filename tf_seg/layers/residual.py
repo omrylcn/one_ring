@@ -38,18 +38,18 @@ class ResidualLayer(Layer):
 
         self.add = Add()
 
-    def call(self, inputs):
+    def call(self, inputs,training=None):
 
-        x = self.batch_norm1(inputs)
+        x = self.batch_norm1(inputs, training=training)
         x = self.activation(x)
         x = self.conv1(x)
 
-        x = self.batch_norm2(x)
+        x = self.batch_norm2(x, training=training)
         x = self.activation(x)
         x = self.conv2(x)
 
         x_i = self.conv_skip(inputs)
-        x_i = self.batch_norm_skip(x_i)
+        x_i = self.batch_norm_skip(x_i, training=training)
         x = self.add([x, x_i])
 
         return x

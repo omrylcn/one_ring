@@ -26,14 +26,14 @@ class ConvUnet(Layer):
 
         self.pool = MaxPooling2D((2, 2), (2, 2))
 
-    def call(self, x, pool=True):
+    def call(self, x, pool=True, training=None):
 
         x = self.conv1(x)
-        x = self.bn1(x)
+        x = self.bn1(x, training=training)
         x = self.act1(x)
 
         x = self.conv2(x)
-        x = self.bn2(x)
+        x = self.bn2(x, training=training)
         x = self.act2(x)
         c = x
 
@@ -41,8 +41,8 @@ class ConvUnet(Layer):
             x = self.pool(x)
             return c, x
         return c
-        
+
     def get_config(self):
-        config = super(ConvUnet,self).get_config()
+        config = super(ConvUnet, self).get_config()
         config.update({"n_filter": self.n_filter, "activation": self.activation})
         return config
