@@ -8,7 +8,7 @@ from tf_seg.models.resunet_pp import ResUnetPlusPlus
 from tf_seg.models.deeplabv3plus import DeepLabV3Plus
 
 
-model_lib = {"unet": Unet, "resunet": ResUnet, "resunet_pp": ResUnetPlusPlus, "deeplabv3plus": DeeplabV3Plus}
+model_lib = {"unet": Unet, "resunet": ResUnet, "resunet_pp": ResUnetPlusPlus, "deeplabv3plus": DeepLabV3Plus}
 
 
 def pascal_case_to_snake_case(s: str) -> str:

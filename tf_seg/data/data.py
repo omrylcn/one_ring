@@ -28,6 +28,31 @@ class DataLoader(DataLoaderAbstract):
     """
     A TensorFlow Dataset API based loader for semantic segmentation problems.
 
+    Parameters
+    ----------
+    image_paths : List[str]
+        List of paths of train images.
+    mask_paths : List[str]
+        List of paths of train masks (segmentation masks)
+    image_size : Tuple[int]
+        Tuple, the final height, width of the loaded images.
+    extensions : Tuple[str]
+        Tuple, the extensions of the images.
+    channels : Tuple[int]
+        Tuple of ints, image and mask channels.,
+    output_type : Tuple[tf.DType]
+        Tuple of tf.DType, the output type of the images and masks.
+    name : str, optional
+        Name of the loader, by default "loader"
+    normalizing : bool
+        Boolean, if True, the images and masks are normalized to [0, 1].
+    pallette : Tuple[int]
+        Tuple of ints, the color pallette of the images and masks.
+    one_hot_encoding : bool
+        If True, one hot encodes the masks.
+    background_adding : bool
+        If True, adds the background class to the mask.
+
     See Also
     --------
     - https://github.com/HasnainRaz/SemSegPipeline/blob/master/dataloader.py
@@ -53,30 +78,7 @@ class DataLoader(DataLoaderAbstract):
         """
         Initializes the data loader object
 
-        Parameters
-        ----------
-        image_paths : List[str]
-            List of paths of train images.
-        mask_paths : List[str]
-            List of paths of train masks (segmentation masks)
-        image_size : Tuple[int]
-            Tuple, the final height, width of the loaded images.
-        extensions : Tuple[str]
-            Tuple, the extensions of the images.
-        channels : Tuple[int]
-            Tuple of ints, image and mask channels.,
-        output_type : Tuple[tf.DType]
-            Tuple of tf.DType, the output type of the images and masks.
-        name : str, optional
-            Name of the loader, by default "loader"
-        normalizing : bool
-            Boolean, if True, the images and masks are normalized to [0, 1].
-        pallette : Tuple[int]
-            Tuple of ints, the color pallette of the images and masks.
-        one_hot_encoding : bool
-            If True, one hot encodes the masks.
-        background_adding : bool
-            If True, adds the background class to the mask.
+        
 
         """
         self.image_paths = image_paths
