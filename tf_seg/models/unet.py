@@ -1,12 +1,8 @@
 from typing import Tuple, List
 from tensorflow.keras.layers import (
-    Layer,
     Conv2DTranspose,
     Concatenate,
     Conv2D,
-    BatchNormalization,
-    Activation,
-    MaxPooling2D,
     Input,
 )
 from tensorflow.keras import Model
@@ -14,9 +10,35 @@ from tf_seg.backbones import get_backbone
 from tf_seg.layers import ConvUnet as ConvBlock
 from tf_seg.base import ModelBuilder
 
+
 # TODO: add backbone and pretrained weights
 class Unet(ModelBuilder):
-    """Model builder for Vanialla UNet Model"""
+    """
+    Model builder for Vanialla UNet Model
+
+    Parameters
+    ----------
+    output_size : int
+        The output size of the model.
+    name : str, optional
+        The name of the model. The default is "unet".
+    input_shape : Tuple
+        Shape of the input image.
+    n_filters : List[int]
+        Number of filters in each convolutional layer.
+    activation : str
+        Activation function to use.
+    final_activation : str
+        Activation function to use for the final layer.
+    backbone : str
+        Backbone to use.
+    pretrained : bool
+        Whether to use pretrained weights.
+
+    Notes
+    -----
+    Unet Article : https://arxiv.org/abs/1505.04597
+    """
 
     def __init__(
         self,
@@ -29,32 +51,7 @@ class Unet(ModelBuilder):
         backbone: str = None,
         pretrained: str = "imagenet",
     ) -> None:
-        """Unet constructor.
-
-        Parameters
-        ----------
-        output_size : int
-            The output size of the model.
-        name : str, optional
-            The name of the model. The default is "unet".
-        input_shape : Tuple
-            Shape of the input image.
-        n_filters : List[int]
-            Number of filters in each convolutional layer.
-        activation : str
-            Activation function to use.
-        final_activation : str
-            Activation function to use for the final layer.
-        backbone : str
-            Backbone to use.
-        pretrained : bool
-            Whether to use pretrained weights.
-
-        Notes
-        -----
-        Unet Article : https://arxiv.org/abs/1505.04597
-
-        """
+        """Unet constructor."""
 
         self.input_shape = input_shape
         self.final_activation = final_activation
@@ -95,9 +92,7 @@ class Unet(ModelBuilder):
         # Decoder
         d = bridge
         for n, c in enumerate(connection_list):
-            d = Conv2DTranspose(
-                decoder_n_filters[n], (3, 3), padding="same", strides=(2, 2)
-            )(d)
+            d = Conv2DTranspose(decoder_n_filters[n], (3, 3), padding="same", strides=(2, 2))(d)
             d = Concatenate()([d, c])
             d = ConvBlock(
                 decoder_n_filters[n],
@@ -112,9 +107,7 @@ class Unet(ModelBuilder):
             remain_decoder_n_filter = decoder_n_filters[(-1 * n_remain_block) :]
             for fltr in remain_decoder_n_filter:
                 d = Conv2DTranspose(fltr, (3, 3), padding="same", strides=(2, 2))(d)
-                d = ConvBlock(fltr, self.activation_name, name=f"decode_{fltr}")(
-                    d, pool=False
-                )
+                d = ConvBlock(fltr, self.activation_name, name=f"decode_{fltr}")(d, pool=False)
 
         # output
         outputs = Conv2D(self.output_size, (1, 1), activation=self.final_activation)(d)
@@ -134,9 +127,7 @@ class Unet(ModelBuilder):
             p = c0
             for fltr in n_filters[:-1]:
                 # c, p = self._conv_block(p, fltr)
-                c, p = ConvBlock(
-                    fltr, self.activation_name, name="conv_block_{}".format(fltr)
-                )(p)
+                c, p = ConvBlock(fltr, self.activation_name, name="conv_block_{}".format(fltr))(p)
                 connection_list.append(c)
 
             # Bridge
@@ -154,9 +145,7 @@ class Unet(ModelBuilder):
             return [c0, *connection_list, b2]
 
         else:
-            backbone_ = get_backbone(
-                self.backbone, self.pretrained, inputs, len(self.n_filters) - 1
-            )
+            backbone_ = get_backbone(self.backbone, self.pretrained, inputs, len(self.n_filters) - 1)
 
             return [
                 c0,
