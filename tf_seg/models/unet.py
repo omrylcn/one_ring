@@ -145,7 +145,7 @@ class Unet(ModelBuilder):
             return [c0, *connection_list, b2]
 
         else:
-            backbone_ = get_backbone(self.backbone, self.pretrained, inputs, len(self.n_filters) - 1)
+            backbone_ = get_backbone(self.backbone, self.pretrained, inputs, depth=len(self.n_filters) - 1)
 
             return [
                 c0,

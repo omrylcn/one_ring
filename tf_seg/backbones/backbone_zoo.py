@@ -11,7 +11,7 @@ from tensorflow.keras.models import Model
 from tensorflow.python.keras.engine import keras_tensor
 
 
-layer_cadidates = {
+classic_layer_cadidates = {
     "ResNet50": (
         "conv1_relu",
         "conv2_block3_out",
@@ -115,15 +115,15 @@ layer_cadidates = {
 
 deep_labv3_plus_layer_candidates = {
     "ResNet50": (
-        "conv2_block3_2_relu", # low level feature
+        "conv2_block3_2_relu",# low level feature
         "conv4_block6_2_relu"
-        ),
+    ),
     "MobileNetV2": (
-        "block_3_depthwise_relu", # low level feature
+        "block_3_depthwise_relu",# low level feature
         "out_relu"
     )
-    
-}
+}    
+
 
 def get_backbone(
     backbone_name: str,
@@ -132,6 +132,7 @@ def get_backbone(
     depth: int,
     freeze_backbone: bool = True,
     freeze_batch_norm: bool = False,
+    backbone_type: str = "clasic",
 ):
     """
     Configuring a user specified encoder model based on the `tensorflow.keras.applications`
@@ -157,23 +158,33 @@ def get_backbone(
     freeze_batch_norm : bool, default: False
         For not freezing batch normalization layers.
 
+    backbone_type : str, default: "clasic", {"clasic", "deeplab"}
+        The type of layer candidates. Currently supported types are:
+        (1) "clasic": the layer candidates are the output of the last convolutional layer of each block.
+        (2) "deeplabv3_plus": the layer candidates are the activation layer of each block.
+
     Returns
     -------
     model : keras.model.Model
         a keras backbone model.
 
     """
-
-    cadidate = layer_cadidates[backbone_name]
+    if backbone_type == "clasic":
+        candidate = classic_layer_cadidates[backbone_name]
+    elif backbone_type == "deeplab":
+        candidate = deep_labv3_plus_layer_candidates[backbone_name]
+    else:
+        raise ValueError(f"backbone_type {backbone_type} is not supported.")
 
     # ----- #
     # depth checking
-    depth_max = len(cadidate)
+    depth_max = len(candidate)
     if depth > depth_max:
         depth = depth_max
     # ----- #
 
     backbone_func = eval(backbone_name)
+    print()
     backbone_ = backbone_func(
         include_top=False,
         weights=weights,
@@ -184,7 +195,7 @@ def get_backbone(
     X_skip = []
 
     for i in range(depth):
-        X_skip.append(backbone_.get_layer(cadidate[i]).output)
+        X_skip.append(backbone_.get_layer(candidate[i]).output)
 
     model = Model(
         inputs=[
