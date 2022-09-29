@@ -2,13 +2,14 @@ from typing import Tuple, List
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input
 from tf_seg.backbones import get_backbone
+from tf_seg.base.model_builder import ModelBuilder
 
 import pandas as pd
 
 pd.DataFrame()
 
 
-class DeepLabV3Plus:
+class DeepLabV3Plus(ModelBuilder):
     """
     Model builder for DeepLabV3+ Model, originally is used xception backbone, but here is used different backbones.
 
@@ -54,6 +55,7 @@ class DeepLabV3Plus:
         pretrained: str = "imagenet",
         bakcbone_type: str = "deeplab",
     ) -> None:
+        super().__init__()
 
         self.output_size = output_size
         self.final_activation = final_activation
@@ -70,16 +72,9 @@ class DeepLabV3Plus:
         inputs = Input(shape=self.input_shape)
 
         if self.backbone is not None:
-            backbone = get_backbone(
-                self.backbone,
-                input_tensor=inputs,
-                weights=self.pretrained,
-                freeze_backbone=False,
-                freeze_batch_norm=False,
-                backbone_type=self.backbone_type,
-                depth=5)
+            backbone = get_backbone(self.backbone, input_tensor=inputs, weights=self.pretrained, freeze_backbone=False, freeze_batch_norm=False, backbone_type=self.backbone_type, depth=5)
             x = backbone.output
         else:
             raise ValueError("Backbone is not defined. Please define a backbone.")
 
-        return inputs,backbone #Model(inputs=inputs, outputs=x, name=self.name)
+        return Model(inputs=inputs, outputs=x, name=self.name)

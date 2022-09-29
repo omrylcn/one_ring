@@ -38,8 +38,7 @@ class Unet(ModelBuilder):
     Notes
     -----
     Unet Article : https://arxiv.org/abs/1505.04597
-    """
-
+    """  
     def __init__(
         self,
         output_size: int,
