@@ -9,5 +9,10 @@
     "python.formatting.blackArgs": [
         "--line-length=200"
     ],
-    "python.languageServer": "Jedi"
+    "python.languageServer": "Jedi",
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
