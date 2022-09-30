@@ -53,7 +53,7 @@ class DeepLabV3Plus(ModelBuilder):
         activation: str = "relu",
         backbone: str = "ResNet50",
         pretrained: str = "imagenet",
-        bakcbone_type: str = "deeplab",
+        #bakcbone_type: str = "deeplab",
     ) -> None:
         super().__init__()
 
@@ -66,14 +66,14 @@ class DeepLabV3Plus(ModelBuilder):
         self.activation_name = activation
         self.backbone = backbone
         self.pretrained = pretrained
-        self.backbone_type = bakcbone_type
+        #self.backbone_type = bakcbone_type
 
     def build_model(self) -> Model:
         inputs = Input(shape=self.input_shape)
 
         if self.backbone is not None:
-            backbone = get_backbone(self.backbone, input_tensor=inputs, weights=self.pretrained, freeze_backbone=False, freeze_batch_norm=False, backbone_type=self.backbone_type, depth=5)
-            x = backbone.output
+            backbone = get_backbone(self.backbone, input_tensor=inputs, weights=self.pretrained, freeze_backbone=False, freeze_batch_norm=False, depth=5)
+            x = backbone(inputs)
         else:
             raise ValueError("Backbone is not defined. Please define a backbone.")
 

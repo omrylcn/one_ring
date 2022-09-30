@@ -113,16 +113,16 @@ classic_layer_cadidates = {
 }
 
 
-deep_labv3_plus_layer_candidates = {
-    "ResNet50": (
-        "conv2_block3_2_relu",# low level feature
-        "conv4_block6_2_relu"
-    ),
-    "MobileNetV2": (
-        "block_3_depthwise_relu",# low level feature
-        "out_relu"
-    )
-}    
+# deep_labv3_plus_layer_candidates = {
+#     "ResNet50": (
+#         "conv2_block3_2_relu",# low level feature
+#         "conv4_block6_2_relu"
+#     ),
+#     "MobileNetV2": (
+#         "block_3_depthwise_relu",# low level feature
+#         "out_relu"
+#     )
+# }    
 
 
 def get_backbone(
@@ -132,7 +132,7 @@ def get_backbone(
     depth: int,
     freeze_backbone: bool = True,
     freeze_batch_norm: bool = False,
-    backbone_type: str = "clasic",
+    #backbone_type: str = "clasic",
 ):
     """
     Configuring a user specified encoder model based on the `tensorflow.keras.applications`
@@ -158,24 +158,20 @@ def get_backbone(
     freeze_batch_norm : bool, default: False
         For not freezing batch normalization layers.
 
-    backbone_type : str, default: "clasic", {"clasic", "deeplab"}
-        The type of layer candidates. Currently supported types are:
-        (1) "clasic": the layer candidates are the output of the last convolutional layer of each block.
-        (2) "deeplabv3_plus": the layer candidates are the activation layer of each block.
-
     Returns
     -------
     model : keras.model.Model
         a keras backbone model.
 
     """
-    if backbone_type == "clasic":
-        candidate = classic_layer_cadidates[backbone_name]
-    elif backbone_type == "deeplab":
-        candidate = deep_labv3_plus_layer_candidates[backbone_name]
-    else:
-        raise ValueError(f"backbone_type {backbone_type} is not supported.")
+    # if backbone_type == "clasic":
+    #     candidate = classic_layer_cadidates[backbone_name]
+    # elif backbone_type == "deeplab":
+    #     candidate = deep_labv3_plus_layer_candidates[backbone_name]
+    # else:
+    #     raise ValueError(f"backbone_type {backbone_type} is not supported.")
 
+    candidate = classic_layer_cadidates[backbone_name]
     # ----- #
     # depth checking
     depth_max = len(candidate)
