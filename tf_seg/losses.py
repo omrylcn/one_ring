@@ -14,6 +14,7 @@ import tensorflow.keras.backend as K
 from tf_seg.utils.types import FloatTensorLike, TensorLike, Tensor
 from tensorflow.keras.losses import BinaryCrossentropy, CategoricalCrossentropy
 from tf_seg.utils import is_tensor_or_variable
+from tensorflow.python.util.tf_export import keras_export
 
 
 class LossFunctionWrapper(tf.keras.losses.Loss):
@@ -64,10 +65,22 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
 
     def get_config(self):
         config = {}
-        for k, v in iter(self._fn_kwargs.items()):
+        for k, v in self._fn_kwargs.items():
             config[k] = tf.keras.backend.eval(v) if is_tensor_or_variable(v) else v
         base_config = super().get_config()
-        return {**base_config, **config}
+        return dict(list(base_config.items()) + list(config.items()))
+
+    @classmethod
+    def from_config(cls, config):
+        print(config)
+        return cls(**config)
+
+    # def get_config(self):
+    #     config = {}
+    #     for k, v in iter(self._fn_kwargs.items()):
+    #         config[k] = tf.keras.backend.eval(v) if is_tensor_or_variable(v) else v
+    #     base_config = super().get_config()
+    #     return {**base_config, **config}
 
 
 @tf.function()
@@ -136,8 +149,13 @@ class DiceLoss(LossFunctionWrapper):
 
     """
 
-    def __init__(self, const: FloatTensorLike = K.epsilon(), name="dice_loss"):
-        super().__init__(fn=dice_loss, name=name, const=const)
+    def __init__(self, const: FloatTensorLike = K.epsilon(), name="dice_loss", **kwargs):
+        super().__init__(fn=dice_loss, name=name, const=const, **kwargs)
+
+    # def get_config(self):
+    #     config = {"const": self._fn_kwargs["const"]}
+    #     base_config = super().get_config()
+    #     return {**base_config, **config}
 
 
 # ========================= #
@@ -145,13 +163,7 @@ class DiceLoss(LossFunctionWrapper):
 
 
 @tf.function
-def tversky_coef(
-    y_true: TensorLike,
-    y_pred: TensorLike,
-    alpha: FloatTensorLike = 0.5,
-    gamma: FloatTensorLike = 4 / 3,
-    const: FloatTensorLike = K.epsilon(),
-) -> Tensor:
+def tversky_coef(y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(),) -> Tensor:
     """
     Weighted Sørensen–Dice coefficient.
 
@@ -194,13 +206,7 @@ def tversky_coef(
 
 
 @tf.function
-def tversky(
-    y_true: TensorLike,
-    y_pred: TensorLike,
-    alpha: FloatTensorLike = 0.5,
-    gamma: FloatTensorLike = 4 / 3,
-    const: FloatTensorLike = K.epsilon(),
-) -> Tensor:
+def tversky(y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(),) -> Tensor:
     """
     Tversky Loss.
 
@@ -244,13 +250,7 @@ def tversky(
 
 
 @tf.function
-def focal_tversky(
-    y_true,
-    y_pred,
-    alpha: FloatTensorLike = 0.5,
-    gamma: FloatTensorLike = 4 / 3,
-    const: FloatTensorLike = K.epsilon(),
-) -> Tensor:
+def focal_tversky(y_true, y_pred, alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(),) -> Tensor:
 
     """
     Focal Tversky Loss (FTL)
@@ -293,11 +293,6 @@ def focal_tversky(
 
 
 class FocalTverskyLoss(LossFunctionWrapper):
-    def __init__(
-        self,
-        name="focal_tversky_loss",
-        alpha: FloatTensorLike = 0.5,
-        gamma: FloatTensorLike = 4 / 3,
-        const: FloatTensorLike = K.epsilon(),
-    ):
-        super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const)
+    def __init__(self, name="focal_tversky_loss", alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(), **kwargs):
+        super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const, **kwargs)
+
