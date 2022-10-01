@@ -132,7 +132,8 @@ def get_backbone(
     depth: int,
     freeze_backbone: bool = True,
     freeze_batch_norm: bool = False,
-    #backbone_type: str = "clasic",
+    backbone_type: str = "classic",
+    outputs_order: str = [1,-2] 
 ):
     """
     Configuring a user specified encoder model based on the `tensorflow.keras.applications`
@@ -157,6 +158,10 @@ def get_backbone(
         For a frozen backbone
     freeze_batch_norm : bool, default: False
         For not freezing batch normalization layers.
+    backbone_type : str, default: "classic",{classic, deeplabv3_plus}
+        The backbone type to choose backbone layers.
+    order_list : list, default: [1,-2]
+        DeepLabV3+ backbone layers order list. first low level feature, second high level feature.
 
     Returns
     -------
@@ -189,10 +194,17 @@ def get_backbone(
     )
 
     X_skip = []
+    if backbone_type == "classic":
+        for i in range(depth):
+            X_skip.append(backbone_.get_layer(candidate[i]).output)
 
-    for i in range(depth):
-        X_skip.append(backbone_.get_layer(candidate[i]).output)
-
+    elif backbone_type == "deeplabv3_plus":
+        for i in outputs_order:
+            X_skip.append(backbone_.get_layer(candidate[i]).output)
+            
+    else:
+        raise ValueError(f"backbone_type {backbone_type} is not supported. classic or deeplabv3_plus")
+ 
     model = Model(
         inputs=[
             input_tensor,
