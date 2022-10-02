@@ -1,6 +1,6 @@
 from typing import Tuple, List
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, UpSampling2D, Concatenate, Conv2D
+from tensorflow.keras.layers import Input, UpSampling2D, Concatenate, Conv2D,Activation
 from tf_seg.backbones import get_backbone
 from tf_seg.base.model_builder import ModelBuilder
 from tf_seg.layers import AtrousSpatialPyramidPooling, DeepLabConv
@@ -82,10 +82,10 @@ class DeepLabV3Plus(ModelBuilder):
         self.conv2 = DeepLabConv(n_filter=filters, kernel_size=3, name="conv2")
         self.conv3 = DeepLabConv(n_filter=filters, kernel_size=3, name="conv3")
         self.up_sampling2 = UpSampling2D(size=(4, 4), interpolation="bilinear")
-        self.final_layer = Conv2D(output_size, kernel_size=1, activation=final_activation, padding="same")
-
+        self.final_layer = Conv2D(output_size, kernel_size=1,activation=final_activation, padding="same", name="output")
+        
     def build_model(self) -> Model:
-        inputs = Input(shape=self.input_shape)
+        inputs = Input(shape=self.input_shape,name="input")
 
         if self.backbone is not None:
             backbone = get_backbone(
