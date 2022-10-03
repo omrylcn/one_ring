@@ -73,7 +73,6 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
 
     @classmethod
     def from_config(cls, config):
-        print(config)
         return cls(**config)
 
     # def get_config(self):
