@@ -9,6 +9,9 @@ dataset/camvid
 dataset/road
 dataset/test_data
 
+tests/__pycache__
+
+
 
 dataset_v1.0
 dataset_v2.0
@@ -29,6 +32,4 @@ TestResults
 ignis_segmentation.ipynb
 
 ignis
-
-examples/test_binary_road
-examples/test_efficientnetb0_binary_road
+run.py
