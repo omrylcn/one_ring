@@ -17,9 +17,10 @@ from tf_seg.utils import is_tensor_or_variable
 from tensorflow.python.util.tf_export import keras_export
 
 
-
 class LossFunctionWrapper(tf.keras.losses.Loss):
     """Wraps a loss function in the `Loss` class."""
+
+    tf_seg_tpye = "loss"
 
     def __init__(self, fn, reduction=tf.keras.losses.Reduction.AUTO, name=None, **kwargs):
         # convert numpy tensorflow doc style to numpy doc style
@@ -165,7 +166,7 @@ class DiceLoss(LossFunctionWrapper):
 @tf.function
 def tversky_coef(y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(),) -> Tensor:
     """
-    Weighted Sørensen–Dice coefficient.
+    Tversky coefficient for 2-d samples.
 
     Parameters
     ----------
@@ -295,4 +296,9 @@ def focal_tversky(y_true, y_pred, alpha: FloatTensorLike = 0.5, gamma: FloatTens
 class FocalTverskyLoss(LossFunctionWrapper):
     def __init__(self, name="focal_tversky_loss", alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(), **kwargs):
         super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const, **kwargs)
+
+
+__tf_seg_losses__ = ["DiceLoss", "FocalTverskyLoss"]
+
+__all__ = ["DiceLoss", "FocalTverskyLoss", "__tf_seg_losses__"]
 
