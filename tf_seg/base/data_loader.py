@@ -10,6 +10,8 @@ import tensorflow as tf
 class DataLoaderAbstract(ABC):
     """Data  loader abstract class. It is inherited bt all the data loaders"""
 
+    tf_seg_type = "data_loader"
+
     @abstractclassmethod
     def load_data(self) -> tf.data.Dataset:
         """
