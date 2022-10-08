@@ -11,6 +11,8 @@ from tensorflow.keras.metrics import binary_accuracy, categorical_accuracy
 class MeanMetricWrapper(tf.keras.metrics.Mean):
     """Wraps a stateless metric function with the Mean metric."""
 
+    tf_seg_type = "metric"
+
     def __init__(
         self,
         fn: Callable,
@@ -77,5 +79,10 @@ class MeanMetricWrapper(tf.keras.metrics.Mean):
 class DiceScore(MeanMetricWrapper):
     """Computes the Dice score."""
 
-    def __init__(self, name: str = "dice_score",**kwargs):
+    def __init__(self, name: str = "dice_score", **kwargs):
         super().__init__(fn=dice_coef, name=name, **kwargs)
+
+
+__tf_seg_metrics__ = ["DiceScore"]
+
+__all__ = ["DiceScore", "__tf_seg_metrics__"]

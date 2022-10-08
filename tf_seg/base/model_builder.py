@@ -9,7 +9,7 @@ from tensorflow.keras.models import Model
 
 class ModelBuilder(ABC):
     """Model builder abstract class. It is inherited by all the model builders."""
-
+    tf_seg_type = "model_builder"
     @abstractmethod
     def build_model(self) -> Model:
         """Builds the model.
