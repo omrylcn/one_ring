@@ -187,13 +187,13 @@ class DataLoader(DataLoaderAbstract):
         return image, mask
 
     @tf.function
-    def _map_fucntion(self, image_path, mask_path):
+    def _map_function(self, image_path, mask_path):
         """
         Maps the data into a TensorFlow Dataset object.
         """
 
         return tf.py_function(
-            self._sequnce_function,
+            self._sequence_function,
             [image_path, mask_path],
             [self.output_type[0], self.output_type[1]],
         )
@@ -201,7 +201,7 @@ class DataLoader(DataLoaderAbstract):
     def _create_sequence(self, transform_func):
         self.transform_func = transform_func
 
-        def _sequnce_function(image_path, mask_path):
+        def _sequence_function(image_path, mask_path):
             image, mask = self._parse_data(image_path, mask_path)
 
             if self.transform_func:
@@ -227,7 +227,7 @@ class DataLoader(DataLoaderAbstract):
             mask = tf.cast(mask, tf.float32)
             return image, mask
 
-        self._sequnce_function = _sequnce_function
+        self._sequence_function = _sequence_function
 
     def load_data(
         self,
@@ -262,7 +262,7 @@ class DataLoader(DataLoaderAbstract):
         # create sequence function
         self._create_sequence(transform_func)
 
-        dataset = dataset.map(self._map_fucntion, num_parallel_calls=AUTOTUNE)
+        dataset = dataset.map(self._map_function, num_parallel_calls=AUTOTUNE)
 
         if batch_size:
             # print(batch_size)
