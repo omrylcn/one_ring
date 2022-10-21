@@ -7,9 +7,9 @@ from typing import Union
 import onnxruntime as ort
 
 
-def export_convert(model_name: str, onnx_name: str = "model.onnx", opset: int = 13, optimizer: str = "onnx") -> None:
+def export_to_onnx(model_name: str, onnx_name: str = "model.onnx", opset: int = 13) -> None:
     """
-    Export the model to onnx format
+    Export saved tensorflow model to onnx model
 
     Parameters
     ----------
@@ -23,12 +23,12 @@ def export_convert(model_name: str, onnx_name: str = "model.onnx", opset: int = 
         optimizer to use, by default "onnx"
 
     """
-    if optimizer == "onnx":
-        output_path = os.path.join(model_name, onnx_name)
-        try:
-            os.system(f"python -m tf2onnx.convert --saved-model {model_name} --output {output_path} --opset {opset}")
-        except Exception as e:
-            print(f"Error in converting model to onnx : {e}")
+ 
+    output_path = os.path.join(model_name, onnx_name)
+    try:
+        os.system(f"python -m tf2onnx.convert --saved-model {model_name} --output {output_path} --opset {opset}")
+    except Exception as e:
+        print(f"Error in converting model to onnx : {e}")
 
 
 def load_onnx_model(model: Union[str, Model], print_model: bool = False) -> onnx.ModelProto:

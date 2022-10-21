@@ -20,7 +20,7 @@ from tensorflow.keras.optimizers import *
 from tf_seg.losses import *
 from tf_seg.metrics import *
 from tf_seg.utils import snake_case_to_pascal_case
-from tf_seg.deploy import export_convert
+from tf_seg.deploy import export_to_onnx
 
 
 # TODO : add logger
@@ -144,9 +144,9 @@ class Trainer:
         self._save_meta_data(path, meta_data_name)
 
         if self.config["deploy_onnx"]:
-            self._export_onnx(model_name=path, onnx_name=onnx_name)
+            self._export_to_onnx(model_name=path, onnx_name=onnx_name)
 
-    def _export_onnx(self, model_name: str, onnx_name: str, opset: int = 13)-> None:
+    def _export_to_onnx(self, model_name: str, onnx_name: str, opset: int = 13)-> None:
         """
         Export model to onnx
 
@@ -161,7 +161,7 @@ class Trainer:
 
         """
 
-        export_convert(model_name, onnx_name, opset=opset, optimizer="onnx")
+        export_to_onnx(model_name, onnx_name, opset=opset, optimizer="onnx")
 
     def _save_meta_data(self, path: str, filename: str) -> None:
         "Save meta data to model path"
