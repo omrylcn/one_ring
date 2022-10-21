@@ -30,20 +30,19 @@ def export_convert(model_name: str, onnx_name: str = "model.onnx", opset: int = 
             print(f"Error in converting model to onnx : {e}")
 
 
-def load_onnx_model(model: Union[str, Model], print_model: bool = False) -> onnx.ModelProto:
+def load_onnx_model(onnx_path: Union[str, Model], print_model: bool = False) -> onnx.ModelProto:
     """
-    Load onnx model from file or from tf.keras.Model
-
+    Load onnx model
     Parameters
     ----------
     onnx_path : Union[str,Model]
         onnx model path  or tensorflow.keras.Model
     """
-    if isinstance(model, str):
+    if isinstance(onnx_path, str):
 
-        onnx_model = onnx.load(model)
-    elif isinstance(model, Model):
-        onnx_model,_ = tf2onnx.convert.from_keras(model, opset=13)
+        onnx_model = onnx.load(onnx_path)
+    elif isinstance(onnx_path, Model):
+        onnx_model = tf2onnx.convert.from_keras(model, opset=13)
     else:
         raise TypeError("onnx_path should be str or tensorflow.keras.Model")
 
