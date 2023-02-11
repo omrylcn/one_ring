@@ -4,7 +4,9 @@ import time
 import urllib
 import zipfile
 
-url_camvid = "http://web4.cs.ucl.ac.uk/staff/g.brostow/MotionSegRecData/data/LabeledApproved_full.zip"
+from tf_seg.data import get_data_loader, get_camvid_data_loader # noqa
+from tf_seg.config import get_config # noqa
+url_camvid = "https://www.kaggle.com/datasets/carlolepelaars/camvid"
 url_mhp_v1 = ""     # Need to find the link again.
 url_mhp_v2 = ""     # Need to find the link again.
 url_helen = "https://pages.cs.wisc.edu/~lizhang/projects/face-parsing/SmithCVPR2013_dataset_resized.zip"
@@ -19,8 +21,9 @@ def report_hook(count, block_size, total_size):     # Need to add downloading sp
     # speed = progress_size / (1024.**2 * duration)
     percent = count * block_size * 100. / total_size
     sys.stdout.write("\r%d%% | %d MB | %d sec elapsed" %
-                    (percent, progress_size / (1024.**2), duration))
+                     (percent, progress_size / (1024.**2), duration))
     sys.stdout.flush()
+
 
 def download_camvid_dataset(url: str = url_camvid):
     """ Downloads the CamVid dataset.
@@ -37,14 +40,14 @@ def download_camvid_dataset(url: str = url_camvid):
     ----------
     
     """
-    urllib.request.urlretrieve(url, filename="archive.zip", reporthook = report_hook)
-    if not os.path.exists("dataset/CamVid"):
-        os.mkdir("dataset/CamVid")
-    with zipfile.ZipFile("archive.zip", 'r') as zip_ref:
-        zip_ref.extractall("dataset/CamVid")
+    if not os.path.exists("dataset/camvid"):
+        os.mkdir("dataset/camvid")
+    urllib.request.urlretrieve(url, filename="dataset/camvid/archive.zip", reporthook=report_hook)
+    with zipfile.ZipFile("dataset/camvid/archive.zip", 'r') as zip_ref:
+        zip_ref.extractall("dataset/camvid")
     
     ##These parts will apply the dataset directory processing and stuff
-    os.remove("archive.zip")
+    os.remove("dataset/camvid/archive.zip")
 
 
 def download_mhp_dataset(url: str = url_mhp_v2):
@@ -62,14 +65,15 @@ def download_mhp_dataset(url: str = url_mhp_v2):
     ----------
 
     """
-    urllib.request.urlretrieve(url, filename="archive.zip", reporthook=report_hook)
-    if not os.path.exists("dataset/MHP"):
-        os.mkdir("dataset/MHP")
-        with zipfile.ZipFile("archive.zip", 'r') as zip_ref:
-            zip_ref.extractall("dataset/MHP")
+    if not os.path.exists("dataset/mhp"):
+        os.mkdir("dataset/mhp")
+    urllib.request.urlretrieve(url, filename="dataset/mhp/archive.zip", reporthook=report_hook)
+    with zipfile.ZipFile("dataset/mhp/archive.zip", 'r') as zip_ref:
+        zip_ref.extractall("dataset/mhp")
     
     ##These parts will apply the dataset directory processing and stuff
-    os.remove("archive.zip")
+    os.remove("dataset/mhp/archive.zip")
+
 
 def download_helen_dataset(url: str = url_helen):
     """ Downloads the HELEN dataset.
@@ -86,14 +90,15 @@ def download_helen_dataset(url: str = url_helen):
     ----------
 
     """
-    urllib.request.urlretrieve(url, filename="archive.zip", reporthook=report_hook)
-    if not os.path.exists("dataset/HELEN"):
-        os.mkdir("dataset/HELEN")
-        with zipfile.ZipFile("archive.zip", 'r') as zip_ref:
-            zip_ref.extractall("dataset")
+    if not os.path.exists("dataset/helen"):
+        os.mkdir("dataset/helen")
+    urllib.request.urlretrieve(url, filename="dataset/helen/archive.zip", reporthook=report_hook)
+    with zipfile.ZipFile("dataset/helen/archive.zip", 'r') as zip_ref:
+        zip_ref.extractall("dataset/helen")
 
     ##These parts will apply the dataset directory processing and stuff
-    os.remove("archive.zip")
+    os.remove("dataset/helen/archive.zip")
+
 
 def download_data(data_name: str):
     """ Downloads the dataset specified as parameter.
@@ -105,6 +110,7 @@ def download_data(data_name: str):
     """
     downloader = globals()[f"download_{data_name}_dataset"]
     downloader()
+
 
 class DataLib(object):  # Better name maybe
     """ Creates a dataset instance given the dataset parameter as the dataset name.
@@ -125,11 +131,40 @@ class DataLib(object):  # Better name maybe
     def __init__(
         self,
         dataset: str,
-        download: str = True, # maybe a better parameter name
-        init_data_loader: str = False, # maybe a better parameter name
+        download: str = True,  # maybe a better parameter name
+        init_data_loader: str = True,  # maybe a better parameter name
     ):
+        super.__init__()
         pass
     pass
 
-if __name__=="__main__":
-    download_camvid_dataset()
+
+class CamvidDataset(DataLib):
+    def __init__(
+        self,
+        download: str = True,
+        init_data_loader=True,
+    ):
+        super.__init__(dataset="camvid",
+                       download=download,
+                       init_data_loader=init_data_loader)
+        if init_data_loader:
+            self.loader = get_camvid_data_loader(data_config="config.yaml")
+
+    def __call__():
+        pass
+
+    
+def get_camvid(init_data_loader: bool = True):
+    ''' Returns an instance of the CamVid dataset
+
+    Parameters
+    ----------
+    '''
+
+    if not os.path.exists("dataset/camvid"):
+        dataset = CamvidDataset(init_data_loader=init_data_loader)
+    else:
+        dataset = CamvidDataset(download=False, init_data_loader=init_data_loader)
+
+    return dataset

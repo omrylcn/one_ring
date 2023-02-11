@@ -105,7 +105,7 @@ def load_yaml_style_config(yaml_path: str) -> Union[DictConfig, ListConfig]:
 
 def load_module_style_config(module_path: str) -> Union[DictConfig, ListConfig]:
     """load config from python module"""
-    raise NotImplementedError("load_mdule_style_config is not implemented")
+    raise NotImplementedError("load_module_style_config is not implemented")
 
 
 def load_base_config(config):

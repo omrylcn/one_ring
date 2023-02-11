@@ -8,7 +8,7 @@ from tf_seg.data import DataLoader
 
 
 def get_camvid_data_loader(
-    data_config: Union[dict, DictConfig, ListConfig],
+    data_config: Union[Dict, DictConfig, ListConfig],
     train_data: bool = True,
     val_data: bool = True,
     test_data: bool = True,
@@ -206,3 +206,4 @@ def _check_paths(image_paths: List[str], mask_paths: List[str], info: str) -> No
         raise FileNotFoundError(f"{info} mask paths {mask_paths} is empty")
 
     assert len(image_paths) == len(mask_paths), f"Number of {info} images and masks are not equal {len(image_paths)} != {len(mask_paths)}"
+    
