@@ -1,17 +1,16 @@
-from tf_seg.data import data
+from .version import __version__
+from .data import data
 
 # from tf_seg.data import aug
 
-from tf_seg.config import config
-from tf_seg.config import constant
+from .config import config
+from .config import constant
 
-from tf_seg.layers import residual
+from .layers import residual
 
-from tf_seg.models import unet
-from tf_seg.models import resunet
-from tf_seg.models import resunet_pp
+from . import models
 
-from tf_seg.utils import types
+from .utils import types
 
 
 # from tf_seg.models.resunet import ResUnet
