@@ -21,7 +21,8 @@ from tf_seg.base import ModelBuilder
 class ResUnetPlusPlus(ModelBuilder):
     def __init__(
         self,
-        input_shape: Tuple = (256, 256, 3),
+        output_size: int,
+        input_shape: Tuple = (224, 224, 3),
         n_filters: List[int] = [16, 32, 64, 128, 256],
         attn_activation_name: str = "linear",
         name: str = "ResUnet++",
@@ -30,6 +31,7 @@ class ResUnetPlusPlus(ModelBuilder):
         self.n_filters = n_filters
         self.name = name
         self.attn_activation_name = attn_activation_name
+        self.output_size = output_size
 
     def build_model(self) -> Model:
         """ """
@@ -67,7 +69,7 @@ class ResUnetPlusPlus(ModelBuilder):
 
         # output
         outputs = self._assp_block(d3, n_filters[0])
-        outputs = Conv2D(1, (1, 1), padding="same", activation="sigmoid")(outputs)
+        outputs = Conv2D(self.output_size, (1, 1), padding="same", activation="sigmoid")(outputs)
 
         # model
         model = Model(inputs, outputs, name=self.name)

@@ -49,9 +49,9 @@ class DeepLabV3Plus(ModelBuilder):
     def __init__(
         self,
         output_size: int,
-        final_activation: str,
+        final_activation: str = "sigmoid",
         name: str = "deeplabv3plus",
-        input_shape: Tuple = (512, 512, 3),
+        input_shape: Tuple = (224, 224, 3),
         atrous_rates: List[int] = [6, 12, 18],
         filters: int = 256,
         activation: str = "relu",

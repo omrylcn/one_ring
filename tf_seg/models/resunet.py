@@ -26,7 +26,8 @@ class ResUnet(ModelBuilder):
 
     def __init__(
         self,
-        input_shape: Tuple = (256, 256, 3),
+        output_size: int,
+        input_shape: Tuple = (224, 224, 3),
         n_filters: List[int] = [16, 32, 64, 96, 128],
         activation: str = "relu",
         final_activation: str = "sigmoid",
@@ -62,6 +63,7 @@ class ResUnet(ModelBuilder):
         self.activation_name = activation
         self.backbone = backbone
         self.pretrained = pretrained
+        self.output_size = output_size
 
     def build_model(self):
         """Builds the model.
@@ -110,7 +112,7 @@ class ResUnet(ModelBuilder):
         d4 = self._resnet_block(d4, n_filters[0], pool=False)
 
         # output
-        outputs = Conv2D(1, (1, 1), padding="same")(d4)
+        outputs = Conv2D(self.output_size, (1, 1), padding="same")(d4)
         outputs = BatchNormalization()(outputs)
         outputs = Activation("sigmoid")(outputs)
 

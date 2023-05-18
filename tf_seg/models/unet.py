@@ -11,7 +11,6 @@ from tf_seg.layers import ConvUnet as ConvBlock
 from tf_seg.base import ModelBuilder
 
 
-# TODO: add backbone and pretrained weights
 class Unet(ModelBuilder):
     """
     Model builder for Vanialla UNet Model
@@ -43,7 +42,7 @@ class Unet(ModelBuilder):
         self,
         output_size: int,
         name: str = "unet",
-        input_shape: Tuple = (512, 512, 3),
+        input_shape: Tuple = (224, 224, 3),
         n_filters: List[int] = [16, 32, 64, 128, 256],
         activation: str = "relu",
         final_activation: str = "sigmoid",
