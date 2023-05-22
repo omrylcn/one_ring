@@ -78,7 +78,7 @@ class Trainer:
     def _check_trainer_params(self):
         "Check trainer config parameters"
         assert self.config["epochs"] > 0
-        assert self.config["batch_size"] > 0
+        #assert self.config["batch_size"] > 0 # remove batch size
         assert self.config["optimizer"] is not None
         assert self.config["losses"] is not None
 
