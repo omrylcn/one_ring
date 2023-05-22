@@ -19,6 +19,16 @@ from tf_seg.base import ModelBuilder
 
 
 class ResUnetPlusPlus(ModelBuilder):
+    """
+    A model builder for Deep Residual U-Net Model.
+    
+    Notes
+    -----
+
+    ResUNet++: An Advanced Architecture for Medical Image Segmentation : https://arxiv.org/abs/1911.07067
+    
+    """
+
     def __init__(
         self,
         output_size: int,

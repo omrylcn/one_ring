@@ -55,9 +55,11 @@ class DeepLabV3Plus(ModelBuilder):
         atrous_rates: List[int] = [6, 12, 18],
         filters: int = 256,
         activation: str = "relu",
-        backbone: str = "ResNet50",
+        backbone_name: str = "ResNet50",
         pretrained: str = "imagenet",
         backbone_outputs_order: List[int] = [1, -2],
+        freeze_backbone: bool = True,
+        freeze_batch_norm: bool = False
         # bakcbone_type: str = "deeplab",
     ) -> None:
         super().__init__()
@@ -69,9 +71,11 @@ class DeepLabV3Plus(ModelBuilder):
         self.atrous_rates = atrous_rates
         self.filters = filters
         self.activation_name = activation
-        self.backbone = backbone
+        self.backbone_name = backbone_name
         self.pretrained = pretrained
         self.backbone_outputs_order = backbone_outputs_order
+        self.freeze_backbone = freeze_backbone
+        self.freeze_batch_norm = freeze_batch_norm
         # self.backbone_type = bakcbone_type
 
         self.conv_low_level_features = DeepLabConv(n_filter=48, kernel_size=1, name="conv_low_level_features")
@@ -82,23 +86,23 @@ class DeepLabV3Plus(ModelBuilder):
         self.conv2 = DeepLabConv(n_filter=filters, kernel_size=3, name="conv2")
         self.conv3 = DeepLabConv(n_filter=filters, kernel_size=3, name="conv3")
         self.up_sampling2 = UpSampling2D(size=(4, 4), interpolation="bilinear")
-        self.final_layer = Conv2D(output_size, kernel_size=1,activation=final_activation, padding="same", name="output")
+        self.final_layer = Conv2D(output_size, kernel_size=1, activation=final_activation, padding="same", name="output")
         
     def build_model(self) -> Model:
-        inputs = Input(shape=self.input_shape,name="input")
+        inputs = Input(shape=self.input_shape, name="input")
 
-        if self.backbone is not None:
-            backbone = get_backbone(
-                self.backbone,
+        if self.backbone_name is not None:
+            self.backbone = get_backbone(
+                self.backbone_name,
                 input_tensor=inputs,
                 weights=self.pretrained,
-                freeze_backbone=False,
-                freeze_batch_norm=False,
+                freeze_backbone=self.freeze_backbone,
+                freeze_batch_norm=self.freeze_batch_norm,
                 depth=5,
                 backbone_type="deeplabv3_plus",
                 outputs_order=self.backbone_outputs_order,
             )
-            backbone_outputs = backbone(inputs)
+            backbone_outputs = self.backbone(inputs)
         else:
             raise ValueError("Backbone is not defined. Please define a backbone.")
 

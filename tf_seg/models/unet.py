@@ -46,7 +46,7 @@ class Unet(ModelBuilder):
         n_filters: List[int] = [16, 32, 64, 128, 256],
         activation: str = "relu",
         final_activation: str = "sigmoid",
-        backbone: str = None,
+        backbone_name: str = None,
         pretrained: str = "imagenet",
     ) -> None:
         """Unet constructor."""
@@ -55,7 +55,7 @@ class Unet(ModelBuilder):
         self.final_activation = final_activation
         self.n_filters = n_filters
         self.activation_name = activation
-        self.backbone = backbone
+        self.backbone_name = backbone_name
         self.pretrained = pretrained
         self.name = name
         self.output_size = output_size
@@ -71,8 +71,7 @@ class Unet(ModelBuilder):
         """
 
         n_filters = self.n_filters
-
-        if self.backbone is not None:
+        if self.backbone_name is not None:
             if len(n_filters) >= 7:
                 raise ValueError("If select backbone, n_filters must be lesser than 7")
 
@@ -119,7 +118,7 @@ class Unet(ModelBuilder):
         inputs = Input(self.input_shape, name="input")
         c0 = inputs
 
-        if self.backbone is None:
+        if self.backbone_name is None:
             n_filters = self.n_filters
             connection_list = []
             p = c0
@@ -143,11 +142,11 @@ class Unet(ModelBuilder):
             return [c0, *connection_list, b2]
 
         else:
-            backbone_ = get_backbone(self.backbone, self.pretrained, inputs, depth=len(self.n_filters) - 1)
+            self.backbone = get_backbone(self.backbone_name, self.pretrained, inputs, depth=len(self.n_filters) - 1)
 
             return [
                 c0,
-                *backbone_(c0),
+                *self.backbone(c0),
             ]  # backbone_#backbone_(c0)#[c0,*backbone_(c0)]#*outputs.outputs]
 
     # def _conv_block(self, x, n_filter, pool=True):
