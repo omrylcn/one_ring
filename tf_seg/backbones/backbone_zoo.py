@@ -110,6 +110,41 @@ classic_layer_cadidates = {
         "block6a_expand_activation",
         "top_activation",
     ),
+    "EfficientNetV2B0": (
+        'stem_activation',
+        "block2b_expand_activation",
+        "block4a_expand_activation",
+        "block6a_expand_activation",
+        "top_activation",
+    ),
+    "EfficientNetV2B1": (
+        'stem_activation',
+        "block2c_expand_activation",
+        "block4a_expand_activation",
+        "block6a_expand_activation",
+        "top_activation",
+    ),
+     "EfficientNetV2B2": (
+        'stem_activation',
+        "block2c_expand_activation",
+        "block4a_expand_activation",
+        "block6a_expand_activation",
+        "top_activation",
+    ),
+    "EfficientNetV2B3": (
+        'stem_activation',
+        "block2c_expand_activation",
+        "block4a_expand_activation",
+        "block6a_expand_activation",
+        "top_activation",
+    ),
+    "EfficientNetV2S": (
+        'stem_activation',
+        "block2c_expand_activation",
+        "block4a_expand_activation",
+        "block6a_expand_activation",
+        "top_activation",
+    )
 }
 
 
