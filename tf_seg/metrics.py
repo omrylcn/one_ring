@@ -85,4 +85,8 @@ class DiceScore(MeanMetricWrapper):
 
 __tf_seg_metrics__ = ["DiceScore"]
 
-__all__ = ["DiceScore", "__tf_seg_metrics__"]
+# to control choosing right metrics for segmentation
+METRICS = {'dice_score': DiceScore}
+
+__all__ = ["DiceScore", "__tf_seg_metrics__", "METRICS"]
+
