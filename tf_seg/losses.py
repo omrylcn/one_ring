@@ -299,6 +299,7 @@ class FocalTverskyLoss(LossFunctionWrapper):
 
 
 __tf_seg_losses__ = ["DiceLoss", "FocalTverskyLoss"]
+LOSSES = {'dice_loss': DiceLoss, 'focal_tversky': FocalTverskyLoss, "binary_crossentropy": BinaryCrossentropy, "categorical_crossentropy": CategoricalCrossentropy}
 
-__all__ = ["DiceLoss", "FocalTverskyLoss", "__tf_seg_losses__"]
+__all__ = ["DiceLoss", "FocalTverskyLoss", "__tf_seg_losses__", "LOSSES"]
 
