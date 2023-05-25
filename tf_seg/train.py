@@ -259,10 +259,11 @@ class Trainer:
         current_time = str(datetime.datetime.now())
         self.log(f"Training ended at {current_time}. History saved with id {self.uuid}", level=2)
 
-        # if self.trainer_config["save_model"]:
-
-            #path = os.path.join(path,self.uuid) 
-            #os.makedirs(path, exist_ok=True)
+        if self.trainer_config["save_model"]:
+            path = self.trainer_config["save_model_path"]
+            path = os.path.join(path, self.uuid) 
+            os.makedirs(path, exist_ok=True)
+            self.save(path)
         #     self.save(self.trainer_config["save_model_path"])
     
     @property
@@ -274,8 +275,7 @@ class Trainer:
             self._model.evaluate(self.val_data)
         else:
             self.log(message="Validation data is not provided", level=0)
-            raise ValueError("Validation data is not provided")
-
+           
     def save(self, path: str, meta_data_name="meta_data.pkl", onnx_name="model.onnx") -> None:
         """
         Saves the model to Tensorflow SavedModel and optionally to ONNX format. Also saves related metadata and preprocessor objects.
@@ -289,8 +289,6 @@ class Trainer:
         onnx_name: str, default: "model.onnx"
             Filename to save model in ONNX format.
         """
-
-        
 
         # check path 
         #if not os.path.exists(path):
@@ -307,7 +305,6 @@ class Trainer:
 
         processors_path = os.path.join(path, "processors")
         os.makedirs(name=processors_path, exist_ok=True)
-
 
         # save model
         self._model.save(tf_path)
