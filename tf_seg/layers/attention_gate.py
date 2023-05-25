@@ -27,6 +27,11 @@ class AttentionGate(Layer):
         self.activation_type = activation_type
 
         self.attention_func = eval(self.attention_type)
+        self.wg_conv = Conv2D(self.n_filter, (1, 1), padding="same")
+        self.ws_conv = Conv2D(self.n_filter, (1, 1), padding="same")
+        self.activation = Activation(self.activation_type)
+        self.conv_final = Conv2D(self.n_filter, (1, 1), padding="same")
+        self.activation_final = Activation("sigmoid")
 
     def call(self, inputs, training=None):
         """
@@ -47,25 +52,26 @@ class AttentionGate(Layer):
             Weighted skip connection after applying the attention coefficients.
 
         """
-        gate= inputs[0]
+        #print(len(inputs))
+        gate = inputs[0]
         skip = inputs[1]
-
-        Wg = Conv2D(self.n_filter, (1, 1), padding="same")(gate)
+        #print(gate)
+        Wg = self.w_conv(gate)
         # Wg = BatchNormalization()(Wg)
 
-        Ws = Conv2D(self.n_filter, (1, 1), padding="same")(skip)
+        Ws = self.ws_conv(skip)
 
         #print(Wg.shape, Ws.shape)
         # Ws = BatchNormalization()(Ws)
 
         query = self.attention_func([Wg, Ws])
 
-        f = Activation(self.activation_type)(query)
-        f = Conv2D(self.n_filter, (1, 1), padding="same")(f)
+        f = self.activation(query)
+        f = self.conv_final(f)
 
-        coef_att = Activation("sigmoid")(f)
+        coef_att = self.activation_final(f)
 
-        return Multiply()([skip, coef_att])
+        return multiply([skip, coef_att])
 
     def get_config(self):
         config = super().get_config().copy()
