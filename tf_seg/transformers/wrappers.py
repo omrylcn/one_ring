@@ -9,7 +9,7 @@ from albumentations import Compose
 class AlbumentatiosWrapper:
     """Albumentation Wrapper to use tensorflow dataset."""
 
-    def __init__(self, transforms, output_type=[tf.uint8, tf.uint8]):
+    def __init__(self, transforms, output_type=[tf.float32, tf.uint8]):
         """
         Parameters
         ----------
@@ -26,6 +26,7 @@ class AlbumentatiosWrapper:
         data = {"image": image, "mask": mask}
         data = self.transforms(**data)
         image = data["image"]
+        image = tf.cast(image, tf.float32)
         mask = data["mask"]
         return image, mask
 

@@ -10,7 +10,7 @@ wrapper_class_lib = {"albumentations": AlbumentatiosWrapper}
 
 # TODO : design transformers type
 class Transformer:
-    """Transformer class for data augmentation"""
+    """Transformer class for data augmentation using tensorflow dataset"""
 
     def __init__(self, config: DictConfig, name: str, transformers, **kwargs):
         """
