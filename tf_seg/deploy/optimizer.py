@@ -2,14 +2,14 @@ import os
 import onnx
 import numpy as np
 import tf2onnx
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from typing import Union
 import onnxruntime as ort
 
 
-def export_to_onnx(model_name: str, onnx_name: str = "model.onnx", opset: int = 13) -> None:
+def save_tf_as_onnx(model_name: str, onnx_name: str = "model.onnx", opset: int = 13) -> None:
     """
-    Export saved tensorflow model to onnx model
+    Save saved tensorflow model as onnx model
 
     Parameters
     ----------
@@ -29,6 +29,30 @@ def export_to_onnx(model_name: str, onnx_name: str = "model.onnx", opset: int = 
         os.system(f"python -m tf2onnx.convert --saved-model {model_name} --output {output_path} --opset {opset}")
     except Exception as e:
         print(f"Error in converting model to onnx : {e}")
+
+
+def save_model_as_onnx(model, onnx_name: str = "model.onnx", opset: int = 13) -> None:
+    """
+    Convert a Keras model to ONNX and save it to a file.
+
+    Parameters
+    ----------
+    model : str, tf.keras.Model
+        Either a path to a Keras model or a Keras model instance.
+    onnx_name : str, default: "model.onnx"
+        Path where the converted model will be saved.
+    opset : int, default: 13
+        The ONNX opset to use for the conversion.
+    """
+
+    # Load the model if the input is a path.
+    if isinstance(model, str):
+        if not os.path.isfile(model):
+            raise ValueError(f"No model found at {model}")
+        model = load_model(model)
+
+    onnx_model, _ = tf2onnx.convert.from_keras(model, opset=opset)
+    onnx.save(onnx_model, onnx_name)
 
 
 def load_onnx_model(model: Union[str, Model], print_model: bool = False) -> onnx.ModelProto:
