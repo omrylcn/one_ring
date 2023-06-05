@@ -49,13 +49,13 @@ class Logger:
         self.logger.addHandler(ch)
 
         # File handler
-        if log_file:
-            if not os.path.exists('logs'):
-                os.makedirs('logs')
-            fh = logging.FileHandler(f'logs/{log_file}')
-            fh.setLevel(level)
-            fh.setFormatter(formatter)
-            self.logger.addHandler(fh)
+        # if log_file:
+        #     if not os.path.exists('logs'):
+        #         os.makedirs('logs')
+        #     fh = logging.FileHandler(f'logs/{log_file}')
+        #     fh.setLevel(level)
+        #     fh.setFormatter(formatter)
+        #     self.logger.addHandler(fh)
         
     def debug(self, message):
         """
