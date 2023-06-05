@@ -56,7 +56,7 @@ class AttentionGate(Layer):
         gate = inputs[0]
         skip = inputs[1]
         #print(gate)
-        Wg = self.w_conv(gate)
+        Wg = self.wg_conv(gate)
         # Wg = BatchNormalization()(Wg)
 
         Ws = self.ws_conv(skip)
@@ -70,7 +70,6 @@ class AttentionGate(Layer):
         f = self.conv_final(f)
 
         coef_att = self.activation_final(f)
-
         return multiply([skip, coef_att])
 
     def get_config(self):

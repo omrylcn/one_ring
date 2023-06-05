@@ -6,10 +6,6 @@ from tf_seg.base.model_builder import ModelBuilder
 from tf_seg.layers import AtrousSpatialPyramidPooling, DeepLabConv
 
 
-import pandas as pd
-
-pd.DataFrame()
-
 
 class DeepLabV3Plus(ModelBuilder):
     """
