@@ -131,8 +131,8 @@ class DataLib(object):  # Better name maybe
     def __init__(
         self,
         dataset: str,
-        download: str = True,  # maybe a better parameter name
-        init_data_loader: str = True,  # maybe a better parameter name
+        download: bool = True,  # maybe a better parameter name
+        init_data_loader: bool = True,  # maybe a better parameter name
     ):
         super.__init__()
         pass
@@ -142,7 +142,7 @@ class DataLib(object):  # Better name maybe
 class CamvidDataset(DataLib):
     def __init__(
         self,
-        download: str = True,
+        download: bool = True,
         init_data_loader=True,
     ):
         super.__init__(dataset="camvid",
