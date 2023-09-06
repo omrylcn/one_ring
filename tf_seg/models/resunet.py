@@ -48,8 +48,8 @@ class ResUnet(ModelBuilder):
             Activation function to use for the final layer.
         backbone : str
             Backbone to use.
-        pretrained : bool
-            Whether to use pretrained weights.
+        pretrained : str
+            Which pretrained model to use, default "imagenet".
 
         Notes
         -----
