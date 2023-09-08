@@ -20,13 +20,13 @@ class SegFormer(ModelBuilder):
         Shape of the input image.
     output_size : int
         The size of the output, typically this would be the number of classes for segmentation.
-    pretrained : str
-        Which pretrained model to use, defaults to "nvidia/mit-b0".
+    backbone : str
+        Which model variant to use , defaults to "nvidia/mit-b0".
 
     Notes
     -----
     SegFormer Article : https://arxiv.org/abs/2105.15203
-
+    
     """
     self.output_size = output_size
     self.input_shape = input_shape
@@ -34,5 +34,3 @@ class SegFormer(ModelBuilder):
 
     def build_model(self):
         pass
-
-    
