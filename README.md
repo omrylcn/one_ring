@@ -6,10 +6,10 @@
 
 
 
-```tf_seg``` is a light, moduler,configurable segmentation wrapper package for training,deployment and inference part of ML Life Cycle. Also it can be a template module for any Computer Vision project to use production. It is designed to be modular and reproducible. It is a good choice for experiment tracking and development.
+```tf_seg``` is a light, moduler,configurable segmentation wrapper package for training,deployment and inference part of ML Life Cycle. Also it can be a template module for any Computer Vision project to use in production. It is designed to be modular and reproducible. It is a good choice for experiment tracking and development.
 
 ## How to Build
-In order to start building your segmentation projects with tf_seg you need first to build it in your environment. Following these steps you can build easily. Don't worry, it will take only a few minutes before you start delving into details of the module.
+In order to start building your segmentation projects with tf_seg you need first to build it in your environment. Following these steps you can build easily. Don't worry, it will take only a few minutes before you start delving into details of the tool.
 
 ``` bash
 git clone https://github.com/omrylcn/tf_seg.git
@@ -19,7 +19,7 @@ conda activate tf_seg
 pip3 install -r requirement.txt
 ```
 
-Now that we installed all the necessary libraries, we can start by importing the submodules of tf_seg necessary to build our first project as a fresh start.
+Now that you installed all the necessary libraries, you can start by importing the submodules of tf_seg necessary to build your first project instantly.
 
 ``` python
 from tf_seg.config import get_config
