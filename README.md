@@ -1,7 +1,7 @@
 # Tensorflow Segmentation
 
 
->   <img title="ring" alt="ring" src="images/ring.png" height=255> >  <img title="tf_seg" alt="tf_seg" src="images/tf_seg.png" height=225>
+<img title="ring" alt="ring" src="images/ring.png" height=255> <img title="tf_seg" alt="tf_seg" src="images/tf_seg.png" height=245>
 
 
 
