@@ -1,12 +1,10 @@
 # Tensorflow Segmentation
 
-> ```One tool to rule them all```
-> 
-> ```One tool to find them```
-> 
-> ```One tool to bring'em all```
->
-> ```And in the darkness bind them```
+
+>   <img title="ring" alt="ring" src="images/ring.png" height=255> >  <img title="tf_seg" alt="tf_seg" src="images/tf_seg.png" height=225>
+
+
+
 
 ```tf_seg``` is a light, moduler,configurable segmentation wrapper package for training,deployment and inference part of ML Life Cycle. Also it can be a template module for any Computer Vision project to use production. It is designed to be modular and reproducible. It is a good choice for experiment tracking and development.
 
