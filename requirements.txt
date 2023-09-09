@@ -1,7 +1,8 @@
 albumentations
 datasets
-omegaconf
 matplotlib
+omegaconf
+onnxruntime
 tensorflow
 tf2onnx
 transformers
