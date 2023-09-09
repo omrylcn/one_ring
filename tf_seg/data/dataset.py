@@ -46,7 +46,8 @@ def get_dataset_from_huggingface(dataset_name: str):
     
     """
     assert dataset_name in hf_datasets, "The dataset you are looking is not supported by huggingface data API."
-    dataset = load_dataset(dataset_name)
+    dataset_path = os.path.join("yesilyurt", dataset_name)
+    dataset = load_dataset(dataset_path)
     return dataset
 
 
