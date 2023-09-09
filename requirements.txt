@@ -1,4 +1,5 @@
 albumentations
+datasets
 omegaconf
 matplotlib
 tensorflow
