@@ -3,13 +3,51 @@ import sys
 import time
 import urllib
 import zipfile
+from datasets import load_dataset
 
 from tf_seg.data import get_data_loader, get_camvid_data_loader # noqa
 from tf_seg.config import get_config # noqa
-url_camvid = "https://www.kaggle.com/datasets/carlolepelaars/camvid"
-url_mhp_v1 = ""     # Need to find the link again.
-url_mhp_v2 = ""     # Need to find the link again.
+
+#TODO: Load the datasets in huggingface_hub and set the data api.
+url_camvid = "https://huggingface.co/datasets/yesilyurt/CamVid"
+url_mhp_v1 = """https://doc-14-3o-docs.googleusercontent.com/docs/securesc/qvdk5vi1ibqiblcvk7b5kb0iunlth1ks/bgha1ubbaieguqk3ku83i0oipa18n950/1694260650000/14300881397912700555/10737577685452255707/1h
+    TS8QJBuGdcppFAr_bvW2tsD9hW_ptr5?e=download&ax=AH3YgiDGhumf0-FuXBe3k0tqVeES0nJ5jSXhgdwTDLdbHfzf_NqPUEf1NpXTPGUzymO_FJkx3K8EsT4J4-yqlmRUglp0H4YODpvj5MWJ1-Wewdy3sXAmTtYprIg-9882LD4dujeX1MijkRKWq0YB0_9O0O
+    euxa7qvKmgSCF-bbnlm86iblB_YwlLTTpQBknSfi9-M9Q-UtIQcFAiLJu6Qc72w_BWrlCaMXQMK2c2MYBhDgJCmNgPJifyLI7FaGtU8JD-m5kpR0CtM4h3gxNepnd5E-eXMkkYdXjJsHSdNeWUH5KjmrxhIjJob41B4KfhWduNbhg3YzBvTqXAKuc9Xl4Wwyw1G_7SjN
+    Fn_iG-apVmYbCSPW4UR8V9VzEJzcl8stmSyB6A9CdrMAcd1ElPDhOFZ0ShFcPLY5n90Yf_qiqpDxaNwV8lZXl47azC57j0Wz1-gXCs9M188sTxOTqIRu69SkSQSpOvRTGXN9KHAxDzbfrk9p92N5FDKJdqSZRDtLvPNGPQqQiOk2IAVQrI7MDr5H574
+    -IJQNKdTggEdRgiYxWBa9ICYYzTa2LD4p9MhAag1c92JmsfcsCKxieOsnqjyK8Zdiqa69Mu3vrCdvrlNmgu5Z2pR10ySg_8FcxqILO9crf42GZbvFwIbjcJuk7835GZgHCNYxtPYjCYYeuG3cQiOdlASWnLUID_C_abaPNruAs27b2mdUhsv-
+    Gt7qZ2HxCZoy21T6iPVbWuQv7dW23sMwLOPqQf24q0np7dWTLXmeFycrMXIsyqyBf3rsMc4NXgcl5_2LxfJft5QCr7b2vurjbWlL7nrG76i54DwKMUFyycAHl1y9ETfqRlZbhXDwq0KVqugote47wr0AZFVruVKrKxyGMnIaXfdAYQHfw
+    &uuid=f0477e42-b878-4e84-a024-31b642801194&authuser=0"""     # Need to find the link again.
+url_mhp_v2 = """https://doc-08-3o-docs.googleusercontent.com/docs/securesc/qvdk5vi1ibqiblcvk7b5kb0iunlth1ks/j854o7p9bjfs4j8jjspg0gp1tkp3ol3l/1694260575000/14300881397912700555/10737577685452255707
+    /1YVBGMru0dlwB8zu1OoErOazZoc8ISSJn?e=download&ax=AH3YgiCnE8UcGIqp_ba_0CYHZ_7kX6_N_9sKKuE5EcgmMEJXw0SI49-
+    CeG5GM_q6jiFuRvguDKp8gi3ChMlttBwZLu4Wjaqf5c5PEwrIM_NJrcDOr3Bao_aHtGqJux2C9qVx4aBg62D659seKQSRwbpJZ2TZ2TyZpHlyRZevlfyCik1eyPcdXlPu1HR1D3omXdkyC0f55cOF707iHV09CEnaWyJMkeSSBFy9NxSYfoaEI2luxppSEcWnAVfXwp3
+    YY8LTiuuKiPIvFkCXaUp6l_NB6xwm6NbuTJvNIfYgqg-IjQOSEmtR0j8t3-y1BHDANB5sHKEGuINSRfPNmf0mORgkP8yhQOh3S3jShdVybvii96LIIJg_TPgSclMBZOJ2OoSYUESenmpxbginZiFoXLl9VpTN_BM7r104C5AT3muVmlXWaalk
+    -aygMCZKYjKSGZ4j3VttFCmvOmaVKEUSgwffsNlG8PIdRviBAOqd7WHqn42ROlpQsDLtbCWxTXCQySA7I0VK4UR3HczDlsaV9bfqltIlt-TrZX4-
+    MVnmcjmlvigtXduqtJWu3S28a6t2qUIwAcwO6GQTNyBOILtm8hpy_aG9uJBjlK66akSgkUhYIoupOa8P89hn4od00hXc1QUoRQ812L2dgi90V_yxFvp5QsAXgEPucjzn7pZEKD-CKBS-iRdd-
+    cfI4vHgXDXGULydGIuhVnMwFRTE1zaOCTFmMdD8SFdOJKiuO1P8_sFPFTHPaiJT6UlRbSUNrSysdXR6M6S7yXUA-VMteChOduSu8YKhvybG7xsO_SWXNqJLm2SfRmJmt7OgUoXnq8nkMQb0V2t_bpNFc4QuB4PBVmy6JmwSZ4UvYXAVaRDIu7b3dMu2NqjuJHmcW1
+    -R3AgFRLo&uuid=4f004700-aa40-4bda-a5f8-969c28299eeb&authuser=0&nonce=upsmsjpo7tiai&user=10737577685452255707&hash=rninfgfoch6oasvhkr3vmnuqtc42vhp1"""     # Need to find the link again.
 url_helen = "https://pages.cs.wisc.edu/~lizhang/projects/face-parsing/SmithCVPR2013_dataset_resized.zip"
+hf_datasets = ["CamVid"]
+
+
+def get_huggingface_datasets():
+    """Prints the list of huggingface datasets that can be used within this module.
+
+    """
+    print(hf_datasets)
+
+
+def get_dataset_from_huggingface(dataset_name: str):
+    """Returns the dataset given its name.
+
+    Parameters
+    ----------
+    dataset_name: str
+        The name for the dataset to be pulled fom huggingface_hub. The list of supported datasets can be viewed via the function get_huggingface_datasets().
+    
+    """
+    assert dataset_name in hf_datasets, "The dataset you are looking is not supported by huggingface data API."
+    dataset = load_dataset(dataset_name)
+    return dataset
 
 
 def report_hook(count, block_size, total_size):     # Need to add downloading speed feature.
@@ -36,9 +74,10 @@ def download_camvid_dataset(url: str = url_camvid):
     Notes
     -----
 
+
     References
     ----------
-    
+    CamVid Dataset on Kaggle: https://www.kaggle.com/datasets/carlolepelaars/camvid
     """
     if not os.path.exists("dataset/camvid"):
         os.mkdir("dataset/camvid")
