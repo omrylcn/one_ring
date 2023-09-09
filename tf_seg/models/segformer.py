@@ -49,7 +49,7 @@ class SegFormer(ModelBuilder):
         """
         id2label = {i: label_names[i] for i in range(self.output_size)}
         label2id = {label_names[i]: i for i in range(self.output_size)}
-        model = TFSegformerForSemanticSegmentation(
+        model = TFSegformerForSemanticSegmentation.from_pretrained(
             self.backbone,
             num_labels=self.output_size,
             id2label=id2label,
