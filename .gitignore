@@ -37,3 +37,4 @@ run.py
 
 segmentation_modelling.ipynb
 logs
+*.ipynb
