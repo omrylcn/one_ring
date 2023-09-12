@@ -1,3 +1,29 @@
+- [ ] Integrate Segformer model (huggingface)
+- [ ] Integrate Segformer model (Deepvision)
+- [ ] Add training and inference examples
+- [ ] Add onnx and openvino models for segformer
+- [ ] Integrate UNet+++ model
+- [ ] Add UNet+++ training and inference notebooks
+- [ ] Integrate YOLOv8 model for segmentation (Keras-cv-attention)
+- [ ] Add training and inference examples for YOLOv8
+- [ ] Add docstrings for sources
+- [ ] Add licenses for necessary sources
+- [ ] Add backbones for each necessary model
+- [ ] Add doctring for each backbone
+- [ ] Upload 3 different datasets to google cloud
+- [ ] Build dataset classes for each dataset
+- [ ] Add examples of segmentation training on each dataset
+- [ ] Add mlflow integration
+- [ ] Add onnx integration for inference
+- [ ] Add openvino integration for inference
+- [ ] Add evaluation functions
+- [ ] Add visualization functions and classes
+- [ ] Add overlay functionalities to easily plot
+- [ ] Add setup.py script for pip installation
+- [ ] Add Grad CAM++ integration
+
+
+
 
 - [ ] Add env folder
 
