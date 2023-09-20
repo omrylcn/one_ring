@@ -1,6 +1,7 @@
 albumentations
 datasets
 matplotlib
+numpy
 omegaconf
 onnxruntime
 tensorflow
