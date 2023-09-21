@@ -41,7 +41,7 @@ def download_camvid_dataset(url: str = url_camvid):
     
     """
     if not os.path.exists("dataset/camvid"):
-        os.mkdir("dataset/camvid")
+        os.mkdir("dataset/camvid",exist_ok=True)
     urllib.request.urlretrieve(url, filename="dataset/camvid/archive.zip", reporthook=report_hook)
     with zipfile.ZipFile("dataset/camvid/archive.zip", 'r') as zip_ref:
         zip_ref.extractall("dataset/camvid")
