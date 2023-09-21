@@ -1,6 +1,7 @@
 from typing import Tuple
 from transformers import TFSegformerForSemanticSegmentation
 from tensorflow.keras.models import Model
+
 from tf_seg.base import ModelBuilder
 
 
@@ -18,10 +19,10 @@ class SegFormer(ModelBuilder):
         Which model variant to use , defaults to "nvidia/mit-b0".
 
 
-    Methods
-    -------
-    build_model(self, label_names)
-        Builds and returns the model given the name for the output labels as list.
+        Methods
+        -------
+        build_model(self)
+            Builds and returns the model.
 
     Notes
     -----

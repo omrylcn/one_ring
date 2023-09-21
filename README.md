@@ -8,6 +8,9 @@
 
 ```tf_seg``` is a light, moduler,configurable segmentation wrapper package for training,deployment and inference part of ML Life Cycle. Also it can be a template module for any Computer Vision project to use in production. It is designed to be modular and reproducible. It is a good choice for experiment tracking and development.
 
+## Requirements
+This module uses Python version 3.10.12 and TensorFlow version 2.8.1. In order to get most out of tf_seg, it is recommended to use these versions.
+
 ## How to Build
 In order to start building your segmentation projects with tf_seg you need first to build it in your environment. Following these steps you can build easily. Don't worry, it will take only a few minutes before you start delving into details of the tool.
 
@@ -27,3 +30,15 @@ from tf_seg.data import get_data_loader
 from tf_seg.model import get_model_builder
 ```
 
+## Submodules, Functions and Methods
+
+
+## Version History
+------------------
+ If applicable, include a version history to document the changes made in each version of the tool.
+
+ ## License Information
+ ----------------------
+
+ ## References
+ -------------
