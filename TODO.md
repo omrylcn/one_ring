@@ -1,5 +1,6 @@
 - [ ] Integrate Segformer model (huggingface)
 - [ ] Integrate Segformer model (Deepvision)
+- [ ] Add directory for pretrained models
 - [ ] Add training and inference examples
 - [ ] Add onnx and openvino models for segformer
 - [ ] Integrate UNet+++ model
