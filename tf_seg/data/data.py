@@ -255,6 +255,8 @@ class DataLoader(DataLoaderAbstract):
         if batch_size is None:
             batch_size = self.batch_size
 
+        self.transform_func = transform_func
+
         dataset = tf.data.Dataset.from_tensor_slices((self.image_paths, self.mask_paths))
         if shuffle:
             dataset = dataset.shuffle(buffer_size=len(self.image_paths), seed=self.seed)
@@ -263,6 +265,7 @@ class DataLoader(DataLoaderAbstract):
         self._create_sequence(transform_func)
 
         dataset = dataset.map(self._map_function, num_parallel_calls=AUTOTUNE)
+        dataset.transform_func = transform_func 
 
         if batch_size:
             # print(batch_size)

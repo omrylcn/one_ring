@@ -30,6 +30,7 @@ class Transformer:
             self.transformer, **kwargs
         )
 
+
     @tf.function
     def __call__(self, image: tf.Tensor, mask: tf.Tensor) -> List[tf.Tensor]:
         """Apply augmentation to image and mask"""
@@ -38,3 +39,11 @@ class Transformer:
     def transform(self, image: TensorLike, mask: TensorLike) -> Dict[str, np.ndarray]:
         """Apply augmentation to image and mask"""
         return self.transformer_object.transform(image=image, mask=mask)
+
+    def save(self, path: str) -> None:
+        """Save transformers"""
+        self.transformer_object.save(path)
+
+    def load(self, path: str) -> None:
+        """Load transformers"""
+        self.transformer_object.load(path)

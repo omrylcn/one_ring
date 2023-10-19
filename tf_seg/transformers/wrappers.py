@@ -3,7 +3,7 @@ Wrapper class module
 
 """
 import tensorflow as tf
-from albumentations import Compose
+from albumentations import Compose, save, load
 
 
 class AlbumentatiosWrapper:
@@ -32,11 +32,15 @@ class AlbumentatiosWrapper:
 
     @tf.function
     def __call__(self, image, mask):
-        aug_img, aug_mask = tf.numpy_function(
-            func=self._aug_albument, inp=[image, mask], Tout=self.output_type
-        )
+        aug_img, aug_mask = tf.numpy_function(func=self._aug_albument, inp=[image, mask], Tout=self.output_type)
         return aug_img, aug_mask
 
     def transform(self, image, mask):
         """Apply augmentation to image and mask"""
         return self.transforms(image=image.numpy(), mask=mask.numpy())
+
+    def save(self, path):
+        save(self.transforms, path, data_format="yaml")
+
+    def load(self, path):
+        self.transforms = load(path, data_format="yaml")
