@@ -15,6 +15,7 @@ CONFIG_LOAD_STYLE_LIB = [".yaml", ".yml", ".py"]
 # -------------------#
 # logger part
 LOGGER_NAME = "tf_seg"
+LOG_FOLDER = "logs"
 
 
 # -------------------#
