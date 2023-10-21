@@ -5,7 +5,7 @@ from tensorflow.keras.models import Model
 from tf_seg.base import ModelBuilder
 
 
-class SegFormer(ModelBuilder):
+class SegFormerHF(ModelBuilder):
     def __init__(
         self,
         output_size: int,

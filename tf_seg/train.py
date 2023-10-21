@@ -12,7 +12,7 @@ import pickle
 import tf2onnx
 
 
-from typing import Union, Optional, List, Dict
+from typing import Union, Optional, List
 from omegaconf import DictConfig, ListConfig
 
 from tensorflow.keras.models import Model, load_model
@@ -28,6 +28,7 @@ from tf_seg.logger import Logger
 
 # from tf_seg.utils import snake_case_to_pascal_case
 from tf_seg.deploy import save_model_as_onnx
+from tf_seg.save import ModelSaver
 
 
 OPTIMIZERS = {"sgd": SGD, "rmsprop": RMSprop, "adam": Adam, "adadelta": Adadelta, "adagrad": Adagrad, "adamax": Adamax, "nadam": Nadam, "ftrl": Ftrl}
@@ -77,6 +78,7 @@ class Trainer:
         self._metrics = metrics
         self._callbacks = callbacks
 
+        self.saver = ModelSaver
         self._check_trainer_objects()  # check objects
         self._check_trainer_params()  # check parameters
 
@@ -290,70 +292,73 @@ class Trainer:
             Filename to save model in ONNX format.
         """
 
-        # check path 
-        #if not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
+        self.saver.save(path, meta_data_name, onnx_name)
+
+    #     # check path 
+    #     #if not os.path.exists(path):
+    #     os.makedirs(path, exist_ok=True)
        
-        tf_path = os.path.join(path, "tensorflow")
-        os.makedirs(tf_path, exist_ok=True)
+    #     tf_path = os.path.join(path, "tensorflow")
+    #     os.makedirs(tf_path, exist_ok=True)
 
-        onnx_path = os.path.join(path, "onnx")
-        os.makedirs(onnx_path, exist_ok=True)
+    #     onnx_path = os.path.join(path, "onnx")
+    #     os.makedirs(onnx_path, exist_ok=True)
 
-        meta_data_path = os.path.join(path, "meta_data")
-        os.makedirs(name=meta_data_path, exist_ok=True)
+    #     meta_data_path = os.path.join(path, "meta_data")
+    #     os.makedirs(name=meta_data_path, exist_ok=True)
 
-        processors_path = os.path.join(path, "processors")
-        os.makedirs(name=processors_path, exist_ok=True)
+    #     processors_path = os.path.join(path, "processors")
+    #     os.makedirs(name=processors_path, exist_ok=True)
 
-        # save model
-        self._model.save(tf_path)
-        self.log(message=f"Model is saved to {path}", level=2)
+    #     # save model
+    #     self._model.save(tf_path)
+    #     self.log(message=f"Model is saved to {path}", level=2)
 
-        # save meta data
-        self._save_meta_data(meta_data_path, meta_data_name)
-        self.log(message=f"Meta data is saved to {meta_data_path}", level=2)
+    #     # save meta data
+    #     self._save_meta_data(meta_data_path, meta_data_name)
+    #     self.log(message=f"Meta data is saved to {meta_data_path}", level=2)
         
-        # save processors
-        self._save_processors(processors_path, "processors.pkl")
-        self.log(message=f"Processors are saved to {processors_path}", level=2)
+    #     # save processors
+    #     self._save_processors(processors_path, "processors.pkl")
+    #     self.log(message=f"Processors are saved to {processors_path}", level=2)
 
-        # save onnx
-        if self.trainer_config["deploy_onnx"]:
-            onnx_name = os.path.join(onnx_path, onnx_name)
-            self._save_as_onnx(model=self._model, onnx_name=onnx_name)
-            self.log(message=f"ONNX model is saved to {onnx_path}", level=2)
+    #     # save onnx
+    #     if self.trainer_config["deploy_onnx"]:
+    #         onnx_name = os.path.join(onnx_path, onnx_name)
+    #         self._save_as_onnx(model=self._model, onnx_name=onnx_name)
+    #         self.log(message=f"ONNX model is saved to {onnx_path}", level=2)
 
 
-    def _save_as_onnx(self, model, onnx_name: str, opset: int = 13) -> None:
-        """
-        Save model as onnx file
+    # def _save_as_onnx(self, model, onnx_name: str, opset: int = 13) -> None:
+    #     """
+    #     Save model as onnx file
 
-        Parameters
-        ----------
-        model: tf.keras.models.Model
-            Model to save
-        onnx_name: str
-            Name of onnx file
-        opset: int, default: 13
-           opset version for onnx
+    #     Parameters
+    #     ----------
+    #     model: tf.keras.models.Model
+    #         Model to save
+    #     onnx_name: str
+    #         Name of onnx file
+    #     opset: int, default: 13
+    #        opset version for onnx
 
-        """
+    #     """
 
-        save_model_as_onnx(model, onnx_name, opset=opset)
+    #     save_model_as_onnx(model, onnx_name, opset=opset)
 
-    def _save_meta_data(self, path: str, filename: str) -> None:
-        "Save meta data to model path"
-        assert os.path.exists(path), f"Path: {path} does not exist"
-        with open(path + "/" + filename, "wb") as f:
-            pickle.dump(self.config, f)
+    # def _save_meta_data(self, path: str, filename: str) -> None:
+    #     "Save meta data to model path"
+    #     assert os.path.exists(path), f"Path: {path} does not exist"
+    #     with open(path + "/" + filename, "wb") as f:
+    #         pickle.dump(self.config, f)
         
-    def _save_processors(self, path: str, filename: str) -> None:
-        "Save proto data to model path"
-        pass
-        # assert os.path.exists(path), f"Path: {path} does not exist"
-        # with open(path + "/" + filename, "wb") as f:
-        #     pickle.dump(self.proto_data, f)
+    # def _save_processors(self, path: str, filename: str) -> None:
+    #     "Save proto data to model path"
+    #     pass
+    #     # assert os.path.exists(path), f"Path: {path} does not exist"
+    #     # with open(path + "/" + filename, "wb") as f:
+    #     #     pickle.dump(self.proto_data, f)
+
 
     def load(self, path: str, checking_parameters: bool = True) -> None:
         """
