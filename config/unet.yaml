@@ -2,54 +2,70 @@
 #base: null
 
 data:
-  init_data:
-    base: null
-    path: ./dataset/camvid
-    classes: ["Rood","Sky"]
-    channels: [3,3]
-    palette: [[128,64,128],[128,128,128]] 
-    one_hot_encoding: true
-    background_adding: true
-    image_size: [512,512]
-    batch_size: 4
-    #test_batch_size: 32
-    seed: 48
-    create_validation_set: false
-  augmentation:
-    base: ./config/_base/aug.yaml
-    aug_type: albumentations # only albumentations
-    load_style: file # module
-    train: null
-    test: null
+  base: null
+  name: road_segmentation
+  function_name: custom # it is used camvid dataset to generate binary data
+  path: data/dummy_data # "ignis/data/segmentation/data_v2",
+  classes: [Area]
+  normalizing: false
+  palette: [[255, 255, 255]]
+  one_hot_encoding: true # target output shape
+  background_adding: false # add target background class
+  image_size: [512, 512]
+  batch_size: 4 #
+  output_type: [tf.float32, tf.float32] # this is for camvid data types after data processing
+  channels: [3, 3]
+
+augmentation:
+  base: null #./config/_base/aug_file.yaml
+  aug_type: albumentations # only albumentations
+  load_style: file # module
+  train: null
+  test: null
 
 model:
   base: null
-  model_name: Unet # this also class namey
-  backbone: null 
-  pre_trained: false
-  n_filters:  [16, 32, 64, 128, 256]
+  name: Unet
+  n_filters: [32, 64, 128] #[32,64,128,256,512]
   input_shape: [512, 512, 3]
   final_activation: sigmoid
-       
-compile:
-  base: null
-  optimizer: {name: adam}
-  metrics: [accuracy]
-  losses: [binary_crossentropy]
+  activation: relu
+  backbone_name: EfficientNetB0  # "ResNet50", None
+  pretrained: imagenet
+  output_size: 1
+
 
 trainer:
-  base: null
-  epochs: 20
-  batch_size: 32
+  experiment_name: test_model
+  epochs: 2
+  optimizer: { name: adam, params: { learning_rate: 0.0005 } }
+  losses: [dice_loss]
+  metrics: [dice_score]
+  save_model: true
+  save_model_path: test_saving
+  verbose: 1
+  deploy_onnx: true
 
 callbacks:
   base: null
-  check_point:
-  lr_scheduler:
-  
-    
+  measure_total_time: { class_name: MeasureTotalTime, params: {} }
+  update_best_weights:
+    {
+      class_name: UpdateBestWeights,
+      params: { metric_name: val_dice_score, mode: max },
+    }
+  #lr_scheduler:
 
-  
+
+
+
+
+
+
+
+
+
+
 # model:
 #   class_path: anomalib.models.Padim
 #   init_args:
