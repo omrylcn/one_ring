@@ -6,7 +6,7 @@
 
 
 
-```tf_seg``` is a light, moduler,configurable segmentation wrapper package for training,deployment and inference part of ML Life Cycle. Also it can be a template module for any Computer Vision project to use in production. It is designed to be modular and reproducible. It is a good choice for experiment tracking and development.
+```one_ring``` is a light, moduler,configurable segmentation wrapper package for training,deployment and inference part of ML Life Cycle. Also it can be a template module for any Computer Vision project to use in production. It is designed to be modular and reproducible. It is a good choice for experiment tracking and development.
 
 ## Requirements
 This module uses Python version 3.10.12 and TensorFlow version 2.8.1. In order to get most out of tf_seg, it is recommended to use these versions.
