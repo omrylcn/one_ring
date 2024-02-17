@@ -1,6 +1,18 @@
 # not using tuple !
 #base: null
 
+trainer:
+  experiment_name: test_model
+  epochs: 20
+  optimizer: { name: adam, params: { learning_rate: 0.001 } }
+  losses: [dice_loss]
+  metrics: [dice_score]
+  save_model: true
+  save_model_path: test_saving
+  verbose: 1
+  deploy_onnx: true
+
+
 data:
   base: null
   name: road_segmentation
@@ -34,17 +46,6 @@ model:
   pretrained: imagenet
   output_size: 1
 
-
-trainer:
-  experiment_name: test_model
-  epochs: 2
-  optimizer: { name: adam, params: { learning_rate: 0.0005 } }
-  losses: [dice_loss]
-  metrics: [dice_score]
-  save_model: true
-  save_model_path: test_saving
-  verbose: 1
-  deploy_onnx: true
 
 callbacks:
   base: null

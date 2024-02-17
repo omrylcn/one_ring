@@ -1,6 +1,8 @@
 # pycache
-tf_seg/__pycache__
-tf_seg/**/__pycache__
+**/__pycache__/
+*.pyc
+one_ring/__pycache__
+one_ring/**/__pycache__
 
 data
 appendix
@@ -25,7 +27,7 @@ oxford_pet_data
 addons
 backup
 ~
-tf_seg/config/_config.py
+one_ring/config/_config.py
 #workspace.ipynb
 #config/test.yaml
 
@@ -37,6 +39,9 @@ run.py
 
 segmentation_modelling.ipynb
 logs
-tf_seg/.vscode/launch.json
-tf_seg/.vscode/settings.json
+one_ring/.vscode/launch.json
+one_ring/.vscode/settings.json
 .vscode/settings.json
+
+runs
+mlruns
