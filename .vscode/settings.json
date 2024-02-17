@@ -9,7 +9,7 @@
     "python.formatting.blackArgs": [
         "--line-length=200"
     ],
-    "python.languageServer": "Jedi",
+    "python.languageServer": "Pylance",
     "python.testing.pytestArgs": [
         "tests"
     ],

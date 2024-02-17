@@ -51,26 +51,6 @@ def plot_confusion_matrix(cm, class_names):
     return figure
 
 
-def confusion_matrix_to_iou_recall_precision(cm):
-    """
-    Computes the classwise iou, recall and precision from a confusion matrix
-    cm: Confusion matrix as nxn matrix where n is the number of classes
-    Confusion matrix has switched axes when taken from *total_cm* !!
-    """
-    with tf.name_scope("compute_iou_recall_precision") as scope:
-        sum_over_col = tf.reduce_sum(
-            cm, axis=1
-        )  # axes are switched for the total_cm within MeanIoU
-        sum_over_row = tf.reduce_sum(
-            cm, axis=0
-        )  # axes are switched for the total_cm within MeanIoU
-        tp = tf.linalg.diag_part(cm)
-        fp = sum_over_row - tp
-        fn = sum_over_col - tp
-        iou = tf.math.divide_no_nan(tp, tp + fp + fn)
-        recall = tf.math.divide_no_nan(tp, tp + fn)
-        precision = tf.math.divide_no_nan(tp, tp + fp)
-    return iou, recall, precision
 
 
 def plot_to_image(figure):
@@ -96,89 +76,60 @@ def normalize(x):
 
 
 
-# def generate_overlay_image(pred_image, input_image, alpha=0.3):
-#     """
-#         Generate an overlay image by applying a green mask to the input image based on the prediction mask.
-
-#         Parameters
-#         ----------
-#         pred_image : np.ndarray
-#             The prediction image as a numpy array. This can be a binary mask or any array where values greater than 0.5 are considered part of the mask.
-#         input_image : np.ndarray
-#             The original image on which the overlay will be applied. Must be the same dimensions as `pred_image`.
-#         alpha : float, optional
-#             The transparency factor of the overlay. Higher values make the green mask more opaque. Defaults to 0.3.
-
-#         Returns
-#         -------
-#         np.ndarray
-#             The resulting overlay image as a numpy array with the same shape as `input_image`.
-
-#         Raises
-#         ------
-#         AssertionError
-#             If `pred_image` or `input_image` is not a numpy array or if their dimensions do not match.
-
-#         Examples
-#         --------
-#         >>> input_img = cv2.imread("path/to/image.png")
-#         >>> pred_img = np.random.rand(*input_img.shape[:2])  # Dummy prediction data
-#         >>> overlay_img = generate_overlay_image(pred_img, input_img, alpha=0.5)
-#         >>> cv2.imshow("Overlay", overlay_img)
-#         >>> cv2.waitKey(0)
-
-#         Notes
-#         -----
-#         - The function assumes that `pred_image` has the same height and width as `input_image`.
-#         - The `alpha` parameter controls the blend between the original image and the green mask. An `alpha` of 1.0 would result in only the green mask being visible.
-
-#     """
-#     # Validate inputs
-#     assert isinstance(pred_image, np.ndarray), f"pred_image must be a numpy array, got {type(pred_image)}"
-#     assert isinstance(input_image, np.ndarray), f"input_image must be a numpy array, got {type(input_image)}"
-#     assert pred_image.shape[:2] == input_image.shape[:2], "pred_image and input_image must have the same dimensions"
-
-#     # Ensure pred_image is boolean to create a mask, and apply threshold if necessary
-#     if pred_image.dtype != np.bool_:
-#         pred_mask = np.where(pred_image > 0.5, 1, 0).astype(bool)
-#     else:
-#         pred_mask = pred_image
-
-#     # Create a green color mask where the prediction is positive
-#     colored_mask = np.zeros_like(input_image)
-#     colored_mask[pred_mask, 1] = 255  # Set green channel to max for masked areas
-
-#     # Apply the colored mask to the input image with the specified alpha for the overlay
-#     overlay = cv2.addWeighted(input_image, (1-alpha), colored_mask, alpha, 0)
-
-#     return overlay
 
 def generate_overlay_image(pred_image, input_image, alpha=0.3):
 
     """
     Generate an overlay image by applying a green mask to the input image based on the prediction mask.
 
+    The function creates a green overlay on the parts of the input image where the prediction mask has values indicating a positive prediction (values greater than 0.5). This overlay is blended with the original image using the specified opacity level (alpha).
+
     Parameters
     ----------
     pred_image : np.ndarray
-        The prediction image as a numpy array. This can be a binary mask or any array where values greater than 0.5 are considered part of the mask.
+        The prediction image as a numpy array. This should be a binary mask or any array where values greater than 0.5 indicate the presence of the object of interest. It must have the same spatial dimensions as `input_image`.
     
-    """    
+    input_image : np.ndarray
+        The original image over which the overlay will be applied. Must be a 3-channel image (e.g., RGB).
+    
+    alpha : float, optional
+        The opacity level of the overlay, where 1.0 is fully opaque and 0.0 is fully transparent. Defaults to 0.3.
+
+    Returns
+    -------
+    np.ndarray
+        The resulting overlay image as a numpy array of the same shape as `input_image`.
+
+    Raises
+    ------
+    AssertionError
+        If `pred_image` or `input_image` is not a numpy array, or if their dimensions do not match.
+
+    Example
+    -------
+    >>> pred_image = np.random.rand(512, 512) > 0.5  # Example binary prediction mask
+    >>> input_image = cv2.imread('path/to/your/image.jpg')  # Example input image
+    >>> overlay_image = generate_overlay_image(pred_image, input_image, alpha=0.5)
+    >>> cv2.imshow('Overlay Image', overlay_image)
+    >>> cv2.waitKey(0)
+
+    Note
+    ----
+    The function assumes `input_image` is in RGB format. If using OpenCV's cv2.imread to load `input_image`, 
+    ensure to convert it from BGR to RGB format using cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB) 
+    as OpenCV loads images in BGR format by default.
+    """   
 
 
     assert type(pred_image) == np.ndarray, f"pred_image should be a numpy array,{type(pred_image)}"
     assert type(input_image) == np.ndarray, f"input_image should be a numpy array,{type(input_image)}"
 
     pred_mask = pred_image.astype(np.uint8)
-    image = input_image.astype(np.uint8)
-
-   
+    image = input_image.astype(np.uint8)   
     # masked = cv2.bitwise_and(image, image, mask=pred_mask)
-    
     colored_mask = np.zeros_like(image)
     #colored_mask = np.zeros((pred_mask.shape[0], pred_mask.shape[1], 3), dtype=np.uint8)
     # colored_mask = cv2.merge((pred_mask,pred_mask,pred_mask))
-    
     colored_mask[:, :, 1] = pred_mask[:, :, 0]
     overlay = cv2.addWeighted(image, (1-alpha), colored_mask, alpha, 0)
 
@@ -216,3 +167,83 @@ def calculate_confusion_matrix_and_report(pred, target):
     return cm_result, cr_result
 
 
+def plot_training_history(history, metrics, figsize=(20, 10)):
+    """
+    Plots the training history for a set of metrics.
+
+    Parameters
+    ----------
+    history : dict
+        A dictionary containing the training history, where keys are metric names
+        and values are lists of metric values per epoch.
+    metrics : list of tuples
+        A list of tuples, each containing the name of the metric and its label
+        for plotting. For each metric, both the training and validation values
+        are plotted. Example: [('loss', 'Loss'), ('dice_score', 'Dice Score')].
+    figsize : tuple, optional
+        A tuple indicating the figure size. Default is (20, 10).
+
+    Examples
+    --------
+    >>> history = {
+            'loss': [0.3, 0.2, 0.1, 0.05],
+            'val_loss': [0.4, 0.25, 0.15, 0.1],
+            'dice_score': [0.5, 0.6, 0.7, 0.8],
+            'val_dice_score': [0.45, 0.55, 0.65, 0.75]
+        }
+    >>> metrics = [('loss', 'Loss'), ('dice_score', 'Dice Score')]
+    >>> plot_training_history(history, metrics)
+
+    Notes
+    -----
+    This function assumes that for each metric provided in the `metrics` list,
+    there is a corresponding validation metric in the `history` dictionary
+    prefixed with 'val_'. For example, for the metric 'accuracy', the function
+    expects to find both 'accuracy' and 'val_accuracy' keys in the `history` dict.
+    """
+    
+    num_metrics = len(metrics)
+    plt.figure(figsize=figsize)
+    
+    for i, (metric_name, metric_label) in enumerate(metrics, start=1):
+        plt.subplot(1, num_metrics, i)
+        # Plot training metric
+        plt.plot(history[metric_name], label=f"Train {metric_label}")
+        # Plot validation metric
+        val_metric_name = f"val_{metric_name}"
+        if val_metric_name in history:
+            plt.plot(history[val_metric_name], label=f"Validation {metric_label}")
+        plt.title(metric_label)
+        plt.xlabel('Epoch')
+        plt.ylabel(metric_label)
+        plt.grid(True)
+        plt.legend()
+    
+    plt.tight_layout()
+    plt.show()
+
+
+
+#TODO: edit function
+    
+
+# def confusion_matrix_to_iou_recall_precision(cm):
+# """
+# Computes the classwise iou, recall and precision from a confusion matrix
+# cm: Confusion matrix as nxn matrix where n is the number of classes
+# Confusion matrix has switched axes when taken from *total_cm* !!
+# """
+# with tf.name_scope("compute_iou_recall_precision") as scope:
+#     sum_over_col = tf.reduce_sum(
+#         cm, axis=1
+#     )  # axes are switched for the total_cm within MeanIoU
+#     sum_over_row = tf.reduce_sum(
+#         cm, axis=0
+#     )  # axes are switched for the total_cm within MeanIoU
+#     tp = tf.linalg.diag_part(cm)
+#     fp = sum_over_row - tp
+#     fn = sum_over_col - tp
+#     iou = tf.math.divide_no_nan(tp, tp + fp + fn)
+#     recall = tf.math.divide_no_nan(tp, tp + fn)
+#     precision = tf.math.divide_no_nan(tp, tp + fp)
+# return iou, recall, precision

@@ -45,3 +45,5 @@ one_ring/.vscode/settings.json
 
 runs
 mlruns
+config/spinal_cord.yaml
+.vscode/settings.json
