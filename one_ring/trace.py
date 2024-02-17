@@ -38,7 +38,7 @@ def log_params(config):
             mlflow.log_param(k, v)
 
 
-def log_history(history, log_best=None):
+def log_history(history,initial_epoch=0): #log_best=None):
     """
     Log history to mlflow
 
@@ -50,13 +50,18 @@ def log_history(history, log_best=None):
     log_best : dict
         Best metrics of training
     """
-    for key in history.history.keys():
-        for i in range(len(history.history[key])):
-            mlflow.log_metric(key, float(history.history[key][i]))
+    
+    history_object = history.history if hasattr(history, 'history') else history
+    
+    for key in history_object.keys():
+        epoch = initial_epoch
+        for i in range(len(history_object[key])):
+            epoch+=1
+            mlflow.log_metric(key, float(history_object[key][i]), step=epoch)
 
-        # last element is max value
-        if log_best:
-            mlflow.log_metric("best_" + key, float(log_best[key]))
+        # # last element is max value
+        # if log_best:
+        #     mlflow.log_metric("best_" + key, float(log_best[key]))
 
 
 def generate_run_name():

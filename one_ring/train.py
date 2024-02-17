@@ -5,6 +5,7 @@ trainer class yapısı
 - objelerin eğitim ve evaluate işlemlerini yapar.
 - 
 """
+
 import os
 import uuid
 import datetime
@@ -29,7 +30,7 @@ from one_ring.logger import Logger
 # from one_ring.utils import snake_case_to_pascal_case
 import mlflow
 from one_ring.save import ModelSaver
-from one_ring.trace import initialize_mlflow,log_params
+from one_ring.trace import initialize_mlflow,log_history,log_params,log_model
 
 
 OPTIMIZERS = {
@@ -59,6 +60,7 @@ class Trainer:
         loss: Optional[Loss] = None,
         metrics: Optional[List[Metric]] = None,
         callbacks: Optional[List[Callback]] = None,
+        compiled_model: bool = False,
     ) -> None:
         """
 
@@ -74,6 +76,8 @@ class Trainer:
             Dataset for validation
         callbacks: tf.keras.callbacks.Callback,default: None
             keras Callbacks for training
+        compiled_model: bool, default: False
+            If True, model is already compiled. If False, model will be compiled in fit method
 
         """
         self.logger = Logger("one_ring", log_file="trainer_log.log")
@@ -88,13 +92,15 @@ class Trainer:
         self._metrics = metrics
         self._callbacks = list(callbacks.values()) if callbacks else None
 
-      
         self.saver = ModelSaver(model=self._model, config=self.config, processors=None)
         self._check_trainer_objects()  # check objects
         self._check_trainer_params()  # check parameters
 
-        self.history= {}
+        self.history = {}
         self.fit_counter = 0
+
+        if compiled_model is False:
+            self._model._is_compiled = False
 
     def _check_trainer_objects(self) -> None:
         "Check parameters types"
@@ -138,27 +144,6 @@ class Trainer:
         assert self.trainer_config["epochs"] > 0
         assert self.trainer_config["optimizer"] is not None
         assert self.trainer_config["losses"] is not None
-
-    # def log(self, message: str, level: int = 2) -> None:
-    #     """
-    #     Logs a message with a certain level of severity.
-
-    #     Parameters
-    #     ----------
-    #     message : str
-    #         The message to log.
-    #     level : int, optional
-    #         The level of the message (0 - Error, 1 - Warning, 2 - Info).
-    #         Default is 2 (Info).
-    #     """
-    #     if level == 0:
-    #         self.logger.error(message)
-    #     elif level == 1:
-    #         self.logger.warning(message)
-    #     elif level == 2:
-    #         self.logger.info(message)
-    #     else:
-    #         raise ValueError("Invalid level. Level should be 0 (Error), 1 (Warning), or 2 (Info).")
 
     @property
     def trainer_callbacks(self) -> None:
@@ -246,22 +231,28 @@ class Trainer:
         optimizer = optimizer(**optimizer_params)
         return optimizer
 
-
     def _tracing_log_params(self):
         """
         Log configs  to mlflow
         """
-        log_params = list(self.config)
-    
+        log_params(self.config)
+
     def _tracing_log_model(self):
         """
         Log model to mlflow
         """
-        pass
+        log_model(self._model,str(self.uuid))
 
-    def _tracing_initialize(self):    
+    def _tracing_log_history(self, history, **kwargs):
+        """
+        Log history to mlflow
+        """
+        log_history(history, **kwargs)
+        
+
+    def _tracing_initialize(self):
         initialize_mlflow(self.trainer_config["experiment_name"], self.uuid)
-     
+
     def compile_model(self):
         self.uuid = str(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
         self.loss = self.trainer_loss
@@ -283,68 +274,49 @@ class Trainer:
             If True, continue training from last epoch. If False, recompile model and start training from scratch.
         """
 
+        # initiliaze everything
         if not self._model._is_compiled or not continue_training:
             self.compile_model()
             self.fit_counter = 0
+            self.history = {}
             initial_epoch = 0
-
-        if self.fit_counter == 0:
-            # self._tracing_initialize()
-            # self._tracing_log_params()
-
+            self._tracing_initialize()
             #initialize_mlflow(self.trainer_config["experiment_name"], self.uuid)
-        
-            #mlflow.set_experiment(self.trainer_config["experiment_name"])
-            # active_run = mlflow.active_run()
-            
-            # if active_run is None:
-            #     mlflow.start_run(run_name=self.uuid)
-            
-            # elif active_run.info.run_id!=self.uuid:
-            #     mlflow.end_run()
-            #     mlflow.start_run(run_name=self.uuid)
-            # else:
-            #     pass
+            self._tracing_log_params()
 
-            # mlflow_run_id = mlflow.active_run().info.run_id
-            #mlflow.tensorflow.autolog(silent=True)
-            
             self.logger.info("Start training  ...")
-
-            history = self._model.fit(
-                self.train_data,
-                epochs=self.trainer_config["epochs"],
-                callbacks=self.callbacks,
-                validation_data=self.val_data,
-                initial_epoch=initial_epoch,
-            )
-            # self.history_dict[str(datetime.datetime.now())] = {"h": history.history, "id": self.uuid}
-
-            current_time = str(datetime.datetime.now())
-            self.logger.info(f"Training ended at {current_time}. History saved with id {self.uuid}")
-            self.fit_counter += 1
-            self.history = history.history
-
-
         else:
             self.logger.info("Continue training ...")
             initial_epoch = self.trainer_config["epochs"] * self.fit_counter
-            epochs = self.trainer_config["epochs"] * (self.fit_counter + 1)
-            history = self._model.fit(
-                self.train_data,
-                epochs=epochs,
-                callbacks=self.callbacks,
-                validation_data=self.val_data,
-                initial_epoch=initial_epoch,
-            )
-            # self.history_dict[str(datetime.datetime.now())] = {"h": history.history, "id": self.uuid}
-            current_time = str(datetime.datetime.now())
-            self.logger.info(f"Training ended at {current_time}. History saved with id {self.uuid}")
-            self.fit_counter += 1
-
-            for key, value in history.history.items():
-                self.history[key].extend(value)
         
+        epochs = self.trainer_config["epochs"] * (self.fit_counter + 1)
+        # if self.fit_counter == 0:     
+        #     history = self._model.fit(
+        #         self.train_data,
+        #         epochs=self.trainer_config["epochs"],
+        #         callbacks=self.callbacks,
+        #         validation_data=self.val_data,
+        #         initial_epoch=initial_epoch,
+        #     )
+
+        # else:
+        history = self._model.fit(
+            self.train_data,
+            epochs=epochs,
+            callbacks=self.callbacks,
+            validation_data=self.val_data,
+            initial_epoch=initial_epoch,
+        )
+            # self.history_dict[str(datetime.datetime.now())] = {"h": history.history, "id": self.uuid}
+
+        current_time = str(datetime.datetime.now())
+        self.logger.info(f"Training ended at {current_time}. History saved with id {self.uuid}")
+        self.fit_counter += 1
+
+        self._tracing_log_history(history, initial_epoch=initial_epoch)
+        self._update_history(history)
+        #log_history(self.history)
+
         if self.trainer_config["save_model"]:
             path = self.trainer_config["save_model_path"]
             self.save(path)
@@ -353,6 +325,13 @@ class Trainer:
     # @property
     # def history(self):
     #     return self.history_dict
+
+    def _update_history(self, history):
+        for key, value in history.history.items():
+            if key in self.history:
+                self.history[key].extend(value)
+            else:
+                self.history[key] = value
 
     def evaluate(self) -> None:
         if self.val_data:
@@ -417,6 +396,40 @@ class Trainer:
 
         # except Exception as e:
         #     raise ValueError("Model could not be loaded", e)
+    
+    def end(self, log_model: bool = False) -> None:
+        if log_model:
+            try:
+                self._tracing_log_model()
+
+            except Exception as e:
+                self.logger.error(message=f"log_model method could not be executed. {e}")
+            
+        self.logger.info("Training ended")
+        mlflow.end_run()
 
     def test(self, data) -> None:
+            
         self._model.evaluate(data)
+
+
+# def log(self, message: str, level: int = 2) -> None:
+#     """
+#     Logs a message with a certain level of severity.
+
+#     Parameters
+#     ----------
+#     message : str
+#         The message to log.
+#     level : int, optional
+#         The level of the message (0 - Error, 1 - Warning, 2 - Info).
+#         Default is 2 (Info).
+#     """
+#     if level == 0:
+#         self.logger.error(message)
+#     elif level == 1:
+#         self.logger.warning(message)
+#     elif level == 2:
+#         self.logger.info(message)
+#     else:
+#         raise ValueError("Invalid level. Level should be 0 (Error), 1 (Warning), or 2 (Info).")
