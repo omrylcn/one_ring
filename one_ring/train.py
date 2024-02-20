@@ -45,7 +45,6 @@ OPTIMIZERS = {
 }
 
 
-# TODO : add logger
 # TODO : change default values from constant.py
 class Trainer:
     "Trainer class for training a model"
@@ -57,28 +56,64 @@ class Trainer:
         train_data: Dataset,
         val_data: Optional[Dataset] = None,
         optimizer: Optional[Optimizer] = None,
-        loss: Optional[Loss] = None,
+        loss: Optional[List[Loss]] = None,
         metrics: Optional[List[Metric]] = None,
         callbacks: Optional[List[Callback]] = None,
         compiled_model: bool = False,
     ) -> None:
         """
+        A class for training a model, encapsulating the setup for training and validation processes.
 
         Parameters
         ----------
-        config: Union[DictConfig, ListConfig]
-            Configuration for training
-        model: tf.keras.Model
-            Model to be trained
-        train_data: tf.data.Dataset
-            Dataset for training
-        val_data: tf.data.Dataset,default: None
-            Dataset for validation
-        callbacks: tf.keras.callbacks.Callback,default: None
-            keras Callbacks for training
-        compiled_model: bool, default: False
-            If True, model is already compiled. If False, model will be compiled in fit method
+        config : Union[DictConfig, ListConfig]
+            Configuration settings for training, including hyperparameters and environment settings.
+        model : tf.keras.Model
+            The model to train.
+        train_data : tf.data.Dataset
+            The dataset used for training.
+        val_data : tf.data.Dataset, optional
+            The dataset used for validation. Default is None.
+        optimizer : tf.keras.optimizers.Optimizer, optional
+            The optimizer to use during training. Default is None.
+        loss : List[tf.keras.losses.Loss], optional
+            The loss function or functions to use. Default is None.
+        metrics : List[tf.keras.metrics.Metric], optional
+            The list of metrics to evaluate during training. Default is None.
+        callbacks : List[tf.keras.callbacks.Callback], optional
+            A list of callbacks for custom actions during training. Default is None.
+        compiled_model : bool, optional
+            Indicates if the model is already compiled. If False, the model will be compiled in the fit method. Default is False.
 
+        Attributes
+        ----------
+        The Trainer class does not explicitly define attributes in the __init__ method documentation, as attributes are typically 
+        those that are accessible on the class instance and are intended for use outside of the class's internal mechanisms.
+        However, the parameters provided to __init__ are used to initialize the class's internal state.
+
+        Notes
+        -----
+        The Trainer class is designed to abstract away the boilerplate code associated with training loops in TensorFlow, 
+        allowing users to focus on configuring their models, datasets, and training procedures without worrying about the 
+        underlying mechanics of the training process.
+
+        Examples
+        --------
+        Assuming `config`, `model`, `train_data`, and optionally `val_data`, `optimizer`, `loss`, `metrics`, `callbacks` 
+        are defined appropriately:
+
+        >>> trainer = Trainer(
+                config=config,
+                model=model,
+                train_data=train_data,
+                val_data=val_data,
+                optimizer=optimizer,
+                loss=loss,
+                metrics=metrics,
+                callbacks=callbacks,
+                compiled_model=False
+            )
+        >>> trainer.fit()  # This method would need to be defined within the Trainer class.
         """
         self.logger = Logger("one_ring", log_file="trainer_log.log")
 
