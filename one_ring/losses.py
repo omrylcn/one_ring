@@ -16,6 +16,11 @@ from tensorflow.keras.losses import BinaryCrossentropy, CategoricalCrossentropy
 from one_ring.utils import is_tensor_or_variable
 from tensorflow.python.util.tf_export import keras_export
 
+# import tensorflow as tf
+# from tensorflow.keras.losses import LossFunctionWrapper
+# from tensorflow.types.experimental import TensorLike, FloatTensorLike
+# from tensorflow.keras.backend import epsilon as K_epsilon
+
 
 class LossFunctionWrapper(tf.keras.losses.Loss):
     """Wraps a loss function in the `Loss` class."""
@@ -159,6 +164,54 @@ class DiceLoss(LossFunctionWrapper):
     #     return {**base_config, **config}
 
 
+@tf.function()
+def log_cosh_dice_loss(y_true: TensorLike, y_pred: TensorLike, const: FloatTensorLike = K.epsilon()) -> Tensor:
+    """
+    Computes the log-cosh of the Dice loss.
+
+    Parameters
+    ----------
+    y_true : tensor-like
+        The ground truth values.
+    y_pred : tensor-like
+        The predicted values.
+    const : float-tensor-like, optional (default=K.epsilon())
+        A constant that smooths the loss gradient and reduces numerical instabilities.
+
+    Returns
+    -------
+    loss : tensor
+        Log-cosh Dice loss values per sample.
+    """
+
+    dice_loss_value = dice_loss(y_true, y_pred, const)
+    log_cosh_dice = tf.math.log((tf.exp(dice_loss_value) + tf.exp(-dice_loss_value)) / 2.0)
+    return log_cosh_dice
+
+class LogCoshDiceLoss(LossFunctionWrapper):
+    """
+    Implements the Log-Cosh Dice loss.
+
+    This loss combines the log-cosh function with the Sørensen–Dice coefficient to smooth
+    the loss landscape and potentially provide more stable and effective training outcomes.
+
+    See Also
+    --------
+    ttps://arxiv.org/pdf/2006.14822.pdf
+
+    Examples
+    --------
+    >>> y_true = tf.constant([[0, 1, 0], [0, 0, 1]])
+    >>> y_pred = tf.constant([[0.1, 0.9, 0.1], [0, 0.5, 0.5]])
+    >>> log_cosh_dice_loss = LogCoshDiceLoss()
+    >>> log_cosh_dice_loss(y_true, y_pred)
+    <tf.Tensor: shape=(), dtype=float32, numpy=value>
+    """
+
+    def __init__(self, const: FloatTensorLike = K.epsilon(), name="log_cosh_dice_loss", **kwargs):
+        super().__init__(fn=log_cosh_dice_loss, name=name, const=const, **kwargs)
+
+
 # ========================= #
 # Tversky loss and variants
 
@@ -288,7 +341,7 @@ def focal_tversky(y_true, y_pred, alpha: FloatTensorLike = 0.5, gamma: FloatTens
     y_true = tf.squeeze(y_true)
 
     # (Tversky loss)**(1/gamma)
-    loss_val = tf.math.pow((1 - tversky_coef(y_true, y_pred, alpha=alpha, const=const)), 1 / gamma)
+    loss_val = tf.math.pow((1 - tversky_coef(y_true, y_pred, alpha=alpha, const=const)), 1/gamma)
 
     return loss_val
 
@@ -298,8 +351,11 @@ class FocalTverskyLoss(LossFunctionWrapper):
         super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const, **kwargs)
 
 
-__one_ring_losses__ = ["DiceLoss", "FocalTverskyLoss"]
-LOSSES = {'dice_loss': DiceLoss, 'focal_tversky': FocalTverskyLoss, "binary_crossentropy": BinaryCrossentropy, "categorical_crossentropy": CategoricalCrossentropy}
+__one_ring_losses__ = ["DiceLoss", "FocalTverskyLoss", "LogCoshDiceLoss"]
+LOSSES = {
+    'dice_loss': DiceLoss, 'focal_tversky_loss': FocalTverskyLoss,'log_cosh_dice_loss': LogCoshDiceLoss,
+    "binary_crossentropy": BinaryCrossentropy, "categorical_crossentropy": CategoricalCrossentropy
+}
 
-__all__ = ["DiceLoss", "FocalTverskyLoss", "__one_ring_losses__", "LOSSES"]
+__all__ = ["DiceLoss", "FocalTverskyLoss","LogCoshDiceLoss", "__one_ring_losses__", "LOSSES"]
 

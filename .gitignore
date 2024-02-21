@@ -3,6 +3,7 @@
 *.pyc
 one_ring/__pycache__
 one_ring/**/__pycache__
+board_logs
 
 data
 appendix
