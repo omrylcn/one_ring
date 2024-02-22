@@ -167,55 +167,41 @@ def calculate_confusion_matrix_and_report(pred, target):
     return cm_result, cr_result
 
 
-def plot_training_history(history, metrics, figsize=(20, 10)):
+def plot_history_dict(history_dict, figsize=(20, 10)):
     """
-    Plots the training history for a set of metrics.
+    Plots the training and validation metrics from a Keras History object.
 
     Parameters
     ----------
-    history : dict
-        A dictionary containing the training history, where keys are metric names
-        and values are lists of metric values per epoch.
-    metrics : list of tuples
-        A list of tuples, each containing the name of the metric and its label
-        for plotting. For each metric, both the training and validation values
-        are plotted. Example: [('loss', 'Loss'), ('dice_score', 'Dice Score')].
+    history_dict : dict
+        A dictionary containing the training and validation metrics.
     figsize : tuple, optional
         A tuple indicating the figure size. Default is (20, 10).
 
     Examples
     --------
-    >>> history = {
-            'loss': [0.3, 0.2, 0.1, 0.05],
-            'val_loss': [0.4, 0.25, 0.15, 0.1],
-            'dice_score': [0.5, 0.6, 0.7, 0.8],
-            'val_dice_score': [0.45, 0.55, 0.65, 0.75]
-        }
-    >>> metrics = [('loss', 'Loss'), ('dice_score', 'Dice Score')]
-    >>> plot_training_history(history, metrics)
-
-    Notes
-    -----
-    This function assumes that for each metric provided in the `metrics` list,
-    there is a corresponding validation metric in the `history` dictionary
-    prefixed with 'val_'. For example, for the metric 'accuracy', the function
-    expects to find both 'accuracy' and 'val_accuracy' keys in the `history` dict.
+    # Assuming `model.fit` has been called and returned a History object as `history`
+    >>> plot_training_history(history)
     """
-    
+
+    # Extract the history dictionary
+    history_dict
+    metrics = list(history_dict.keys())
     num_metrics = len(metrics)
+    
     plt.figure(figsize=figsize)
     
-    for i, (metric_name, metric_label) in enumerate(metrics, start=1):
-        plt.subplot(1, num_metrics, i)
+    for i, metric in enumerate(metrics):
+        plt.subplot(1, num_metrics, i+1)
         # Plot training metric
-        plt.plot(history[metric_name], label=f"Train {metric_label}")
-        # Plot validation metric
-        val_metric_name = f"val_{metric_name}"
-        if val_metric_name in history:
-            plt.plot(history[val_metric_name], label=f"Validation {metric_label}")
-        plt.title(metric_label)
+        plt.plot(history_dict[metric], label=f"Train {metric}")
+        # Plot validation metric, if it exists
+        val_metric = f"val_{metric}"
+        if val_metric in history_dict:
+            plt.plot(history_dict[val_metric], label=f"Validation {metric}")
+        plt.title(metric.capitalize())
         plt.xlabel('Epoch')
-        plt.ylabel(metric_label)
+        plt.ylabel(metric)
         plt.grid(True)
         plt.legend()
     

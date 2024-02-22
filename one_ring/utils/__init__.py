@@ -8,4 +8,4 @@ from one_ring.utils.aug_func import (
 from one_ring.utils.py_func import snake_case_to_pascal_case, pascal_case_to_snake_case
 from one_ring.utils.tf_func import is_tensor_or_variable
 
-from one_ring.utils.plot import generate_overlay_image,calculate_confusion_matrix_and_report
+from one_ring.utils.plot import generate_overlay_image,calculate_confusion_matrix_and_report,plot_history_dict
