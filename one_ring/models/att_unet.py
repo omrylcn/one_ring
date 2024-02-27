@@ -99,7 +99,7 @@ class AttUnet(ModelBuilder):
         inputs = encoder_output[0]
         bridge = encoder_output[-1]
         connection_list = encoder_output[1:-1][::-1]
-        decoder_n_filters = n_filters[:-1][::-1]
+        decoder_n_filters = n_filters[:][::-1]
 
         # [print(i.shape) for i in encoder_output]
 
@@ -165,7 +165,7 @@ class AttUnet(ModelBuilder):
             return [c0, *connection_list, b2]
 
         else:
-            self.backbone = get_backbone(self.backbone_name, self.pretrained, inputs, depth=len(self.n_filters) - 1,freeze_backbone=self.freeze_backbone)
+            self.backbone = get_backbone(self.backbone_name, self.pretrained, inputs, depth=len(self.n_filters),freeze_backbone=self.freeze_backbone)
 
             return [
                 c0,
