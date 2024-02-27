@@ -42,3 +42,4 @@ from tf_seg.model import get_model_builder
 
  ## References
  -------------
+= (ylog(ˆ y)+(1 -y)log(1 - y)).
