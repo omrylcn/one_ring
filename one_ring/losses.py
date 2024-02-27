@@ -89,6 +89,56 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
     #     return {**base_config, **config}
 
 
+
+@tf.function
+def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
+    """
+    Computes the Jaccard similarity index for 2-d samples.
+
+    Parameters
+    ----------
+    y_true : tensor-like
+        The ground truth values.
+    y_pred : tensor-like
+        The predicted values.
+
+    Returns
+    -------
+    loss : tensor
+        Loss values per sample.
+
+    """
+
+    y_true = tf.reshape(y_true, [-1])
+    y_pred = tf.reshape(y_pred, [-1])
+
+    intersection = tf.reduce_sum(y_true * y_pred)
+    union = tf.reduce_sum(y_true + y_pred - y_true * y_pred)
+    return intersection / union
+
+
+@tf.function
+def jaccard_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
+    """
+    Computes the Jaccard loss for 2-d samples.
+
+    Parameters
+    ----------
+    y_true : tensor-like
+        The ground truth values.
+    y_pred : tensor-like
+        The predicted values.
+
+    Returns
+    -------
+    loss : tensor
+        Loss values per sample.
+
+    """
+
+    return 1 - jaccard_similarity(y_true, y_pred)
+
+
 @tf.function()
 def dice_coef(y_true: TensorLike, y_pred: TensorLike, const: FloatTensorLike = K.epsilon()) -> Tensor:
     """
@@ -351,11 +401,101 @@ class FocalTverskyLoss(LossFunctionWrapper):
         super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const, **kwargs)
 
 
+
+
+# ========================= #
+#  Basnet Losses
+
+from tensorflow.keras.losses import  BinaryCrossentropy
+import tensorflow as tf
+from one_ring.utils.types import FloatTensorLike, TensorLike, Tensor
+from one_ring.losses import LossFunctionWrapper
+
+
+
+
+@tf.function
+def basnet_hybrid_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
+    """
+    Implements the hybrid loss proposed in BASNET, combining Binary Cross Entropy (BCE),
+    Structural Similarity Index (SSIM), and Jaccard (IoU) losses.
+
+    This hybrid approach aims to guide the network to learn three-level (pixel-, patch-,
+    and map-level) hierarchy representations for improved segmentation performance.
+
+    Parameters
+    ----------
+    y_true : tensor-like
+        The ground truth values.
+    y_pred : tensor-like
+        The predicted values.
+
+    Returns
+    -------
+    loss : tensor
+        Loss values per sample.
+
+    """
+
+    bce_loss = BinaryCrossentropy(from_logits=False)(y_true, y_pred)
+    ms_ssim_loss = 1 - tf.image.ssim(y_true, y_pred, max_val=1)
+    jacard_loss = 1 - jacard_similarity(y_true, y_pred)
+
+    return bce_loss + ms_ssim_loss + jacard_loss
+
+
+# TODO: Implement the BasnetHybridLoss class
+# class BASNetHybridLoss(LossFunctionWrapper):
+#     """
+#     Implements the hybrid loss proposed in BASNET, combining Binary Cross Entropy (BCE),
+#     Structural Similarity Index (SSIM), and Jaccard (IoU) losses.
+
+#     This hybrid approach aims to guide the network to learn three-level (pixel-, patch-,
+#     and map-level) hierarchy representations for improved segmentation performance.
+
+#     See Also
+#     --------
+#     Qin, X., et al. BASNet: Boundary-aware salient object detection.
+#     https://arxiv.org/abs/2101.04704
+
+#     Examples
+#     --------
+#     >>> y_true = tf.constant([[0, 1, 0], [0, 0, 1]], dtype=tf.float32)
+#     >>> y_pred = tf.constant([[0.1, 0.9, 0.1], [0.1, 0.8, 0.1]], dtype=tf.float32)
+#     >>> hybrid_loss = BASNetHybridLoss()
+#     >>> print(hybrid_loss(y_true, y_pred).numpy())
+#     """
+
+#     def __init__(self, name="basnet_hybrid_loss", **kwargs):
+#         super().__init__(fn=self.basnet_hybrid_loss, name=name, **kwargs)
+
+#     def basnet_hybrid_loss(self, y_true, y_pred):
+#         bce_loss = BinaryCrossentropy(from_logits=False)(y_true, y_pred)
+#         ms_ssim_loss = 1 - tf.image.ssim(y_true, y_pred, max_val=1)
+#         jacard_loss = 1 - self.jacard_similarity(y_true, y_pred)
+
+#         return bce_loss + ms_ssim_loss + jacard_loss
+
+#     def jacard_similarity(self, y_true, y_pred):
+#         y_true_f = flatten(y_true)
+#         y_pred_f = flatten(y_pred)
+
+#         intersection = K_sum(y_true_f * y_pred_f)
+#         union = K_sum(y_true_f + y_pred_f - y_true_f * y_pred_f)
+#         return intersection / union
+
+
+
+
+
+# ========================= #
+# Losses dictionary
+
 __one_ring_losses__ = ["DiceLoss", "FocalTverskyLoss", "LogCoshDiceLoss"]
 LOSSES = {
     'dice_loss': DiceLoss, 'focal_tversky_loss': FocalTverskyLoss,'log_cosh_dice_loss': LogCoshDiceLoss,
     "binary_crossentropy": BinaryCrossentropy, "categorical_crossentropy": CategoricalCrossentropy
 }
-
 __all__ = ["DiceLoss", "FocalTverskyLoss","LogCoshDiceLoss", "__one_ring_losses__", "LOSSES"]
+
 

@@ -3,7 +3,7 @@ from typing import Callable, Optional
 from tensorflow.keras.metrics import BinaryAccuracy, MeanIoU, CategoricalAccuracy
 from tensorflow.keras.metrics import binary_accuracy, categorical_accuracy
 
-from one_ring.losses import dice_coef
+from one_ring.losses import dice_coef, jaccard_similarity
 from one_ring.utils.types import AcceptableDTypes
 
 # from tensorflow.keras.metrics import MeanMetricWrapper
@@ -84,10 +84,17 @@ class DiceScore(MeanMetricWrapper):
         super().__init__(fn=dice_coef, name=name, **kwargs)
 
 
-__one_ring_metrics__ = ["DiceScore"]
+class JaccardScore(MeanMetricWrapper):
+    """Computes the Jaccard score."""
+
+    def __init__(self, name: str = "jaccard_score", **kwargs):
+        super().__init__(fn=jaccard_similarity, name=name, **kwargs)
+
+
+__one_ring_metrics__ = ["DiceScore", "JaccardScore"]
 
 # to control choosing right metrics for segmentation
-METRICS = {'dice_score': DiceScore}
+METRICS = {'dice_score': DiceScore,"jaccard_score": JaccardScore}
 
-__all__ = ["DiceScore", "__one_ring_metrics__", "METRICS"]
+__all__ = ["DiceScore","JaccardScore", "__one_ring_metrics__", "METRICS"]
 
