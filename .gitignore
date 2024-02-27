@@ -14,7 +14,8 @@ dataset/road
 dataset/test_data
 
 tests/__pycache__
-
+build
+one_ring.egg-info
 
 
 dataset_v1.0
