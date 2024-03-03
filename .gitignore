@@ -49,3 +49,5 @@ runs
 mlruns
 config/spinal_cord.yaml
 .vscode/settings.json
+
+**/workspace/**
