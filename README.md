@@ -22,6 +22,23 @@ conda activate one_ring
 pip3 install -r requirement.txt
 ```
 
+Also you can directly install 'one_ring' with pip:
+
+``` bash
+pip3 install git+https://github.com/omrylcn/one_ring.git
+
+```
+
+Once you installed the library, you can check the installation via importing one_ring:
+
+``` python
+import one_ring
+
+```
+
+
+## Submodules, Functions and Methods
+
 Now that you installed all the necessary libraries, you can start by importing the submodules of one_ring necessary to build your first project instantly.
 
 ``` python
@@ -29,9 +46,6 @@ from one_ring.config import get_config
 from one_ring.data import get_data_loader
 from one_ring.model import get_model_builder
 ```
-
-## Submodules, Functions and Methods
-
 
 ## Version History
 ------------------
@@ -42,4 +56,3 @@ from one_ring.model import get_model_builder
 
  ## References
  -------------
-= (ylog(ˆ y)+(1 -y)log(1 - y)).
