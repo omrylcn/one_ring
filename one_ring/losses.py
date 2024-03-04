@@ -141,6 +141,32 @@ def jaccard_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
 
     return 1 - jaccard_similarity(y_true, y_pred)
 
+
+class JaccardLoss(LossFunctionWrapper):
+    """
+    Implements the Jaccard loss.
+
+    The Jaccard loss is a measure of how well the predicted set matches the true set.
+    It is defined as the following::
+
+        jaccard_loss = 1 - jaccard_similarity(y_true, y_pred)
+
+    See Also
+    --------
+    https://en.wikipedia.org/wiki/Jaccard_index
+
+    Examples
+    --------
+    >>> y_true = tf.constant([[0, 1, 0], [0, 0, 1]], dtype=tf.float32)
+    >>> y_pred = tf.constant([[0.1, 0.9, 0.1], [0.1, 0.8, 0.1]], dtype=tf.float32)
+    >>> jaccard_loss = JaccardLoss()
+    >>> print(jaccard_loss(y_true, y_pred).numpy())
+    """
+
+    def __init__(self, name="jaccard_loss", **kwargs):
+        super().__init__(fn=jaccard_loss, name=name, **kwargs)
+
+
 # ========================= #
 # Dice loss and variants
 
@@ -499,12 +525,12 @@ class BASNetHybridLoss(LossFunctionWrapper):
 
 
 
-
 # ========================= #
 # Losses dictionary
 
-__one_ring_losses__ = ["DiceLoss", "FocalTverskyLoss", "LogCoshDiceLoss", "BASNetHybridLoss"]
+__one_ring_losses__ = ["JaccardLoss","DiceLoss", "FocalTverskyLoss", "LogCoshDiceLoss", "BASNetHybridLoss"]
 LOSSES = {
+    "JaccardLoss": JaccardLoss,
     'dice_loss': DiceLoss, 'focal_tversky_loss': FocalTverskyLoss,'log_cosh_dice_loss': LogCoshDiceLoss,
     "binary_crossentropy": BinaryCrossentropy, "categorical_crossentropy": CategoricalCrossentropy,
     "basnet_hybrid_loss": BASNetHybridLoss
