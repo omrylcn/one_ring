@@ -16,6 +16,7 @@ from tensorflow.keras.losses import BinaryCrossentropy, CategoricalCrossentropy
 from one_ring.utils import is_tensor_or_variable
 from tensorflow.python.util.tf_export import keras_export
 
+
 # import tensorflow as tf
 # from tensorflow.keras.losses import LossFunctionWrapper
 # from tensorflow.types.experimental import TensorLike, FloatTensorLike
@@ -88,6 +89,8 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
     #     base_config = super().get_config()
     #     return {**base_config, **config}
 
+# ========================= #
+# Jaccard loss and similarity
 
 
 @tf.function
@@ -137,6 +140,9 @@ def jaccard_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
     """
 
     return 1 - jaccard_similarity(y_true, y_pred)
+
+# ========================= #
+# Dice loss and variants
 
 
 @tf.function()
@@ -397,22 +403,40 @@ def focal_tversky(y_true, y_pred, alpha: FloatTensorLike = 0.5, gamma: FloatTens
 
 
 class FocalTverskyLoss(LossFunctionWrapper):
+    """
+    Focal Tversky Loss (FTL)
+
+    Parameters
+    ----------
+    y_true : tensor-like
+        The ground truth values.
+    y_pred : tensor-like
+        The predicted values.
+    alpha : float-tensor-like, optional (default=0.5)
+        The weight of `true positives` in the weighted average.
+    gamma : float-tensor-like, optional (default=4/3)
+        A tunable parameter within [1, 3].
+    
+    See Also
+    --------
+    Abraham, N. and Khan, N.M., 2019, April. A novel focal tversky loss function with improved      
+    attention u-net for lesion segmentation.https://arxiv.org/abs/1810.07842
+
+    Examples
+    --------
+    >>> y_true = tf.constant([[0, 1, 0], [0, 0, 1]], dtype=tf.float32)
+    >>> y_pred = tf.constant([[0.1, 0.9, 0.1], [0.1, 0.8, 0.1]], dtype=tf.float32)
+    >>> focal_tversky_loss = FocalTverskyLoss()
+    >>> print(focal_tversky_loss(y_true, y_pred).numpy())
+    """
+
     def __init__(self, name="focal_tversky_loss", alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(), **kwargs):
         super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const, **kwargs)
 
 
 
-
 # ========================= #
 #  Basnet Losses
-
-from tensorflow.keras.losses import  BinaryCrossentropy
-import tensorflow as tf
-from one_ring.utils.types import FloatTensorLike, TensorLike, Tensor
-from one_ring.losses import LossFunctionWrapper
-
-
-
 
 @tf.function
 def basnet_hybrid_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
@@ -439,51 +463,39 @@ def basnet_hybrid_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
 
     bce_loss = BinaryCrossentropy(from_logits=False)(y_true, y_pred)
     ms_ssim_loss = 1 - tf.image.ssim(y_true, y_pred, max_val=1)
-    jacard_loss = 1 - jacard_similarity(y_true, y_pred)
+    jacard_loss = 1 - jaccard_similarity(y_true, y_pred)
 
     return bce_loss + ms_ssim_loss + jacard_loss
 
 
-# TODO: Implement the BasnetHybridLoss class
-# class BASNetHybridLoss(LossFunctionWrapper):
-#     """
-#     Implements the hybrid loss proposed in BASNET, combining Binary Cross Entropy (BCE),
-#     Structural Similarity Index (SSIM), and Jaccard (IoU) losses.
+class BASNetHybridLoss(LossFunctionWrapper):
+    """
+    Implements the hybrid loss proposed in BASNET, combining Binary Cross Entropy (BCE),
+    Structural Similarity Index (SSIM), and Jaccard (IoU) losses.
 
-#     This hybrid approach aims to guide the network to learn three-level (pixel-, patch-,
-#     and map-level) hierarchy representations for improved segmentation performance.
+    This hybrid approach aims to guide the network to learn three-level (pixel-, patch-,
+    and map-level) hierarchy representations for improved segmentation performance.
 
-#     See Also
-#     --------
-#     Qin, X., et al. BASNet: Boundary-aware salient object detection.
-#     https://arxiv.org/abs/2101.04704
+    See Also
+    --------
+    Qin, X., et al. BASNet: Boundary-aware salient object detection.
+    https://arxiv.org/abs/2101.04704
 
-#     Examples
-#     --------
-#     >>> y_true = tf.constant([[0, 1, 0], [0, 0, 1]], dtype=tf.float32)
-#     >>> y_pred = tf.constant([[0.1, 0.9, 0.1], [0.1, 0.8, 0.1]], dtype=tf.float32)
-#     >>> hybrid_loss = BASNetHybridLoss()
-#     >>> print(hybrid_loss(y_true, y_pred).numpy())
-#     """
+    Examples
+    --------
+    >>> y_true = tf.constant([[0, 1, 0], [0, 0, 1]], dtype=tf.float32)
+    >>> y_pred = tf.constant([[0.1, 0.9, 0.1], [0.1, 0.8, 0.1]], dtype=tf.float32)
+    >>> hybrid_loss = BASNetHybridLoss()
+    >>> print(hybrid_loss(y_true, y_pred).numpy())
+    """
 
-#     def __init__(self, name="basnet_hybrid_loss", **kwargs):
-#         super().__init__(fn=self.basnet_hybrid_loss, name=name, **kwargs)
+    def __init__(self, name="basnet_hybrid_loss", **kwargs):
+        super().__init__(fn=basnet_hybrid_loss, name=name, **kwargs)
 
-#     def basnet_hybrid_loss(self, y_true, y_pred):
-#         bce_loss = BinaryCrossentropy(from_logits=False)(y_true, y_pred)
-#         ms_ssim_loss = 1 - tf.image.ssim(y_true, y_pred, max_val=1)
-#         jacard_loss = 1 - self.jacard_similarity(y_true, y_pred)
-
-#         return bce_loss + ms_ssim_loss + jacard_loss
-
-#     def jacard_similarity(self, y_true, y_pred):
-#         y_true_f = flatten(y_true)
-#         y_pred_f = flatten(y_pred)
-
-#         intersection = K_sum(y_true_f * y_pred_f)
-#         union = K_sum(y_true_f + y_pred_f - y_true_f * y_pred_f)
-#         return intersection / union
-
+    # def get_config(self):
+    #     config = {}
+    #     base_config = super().get_config()
+    #     return {**base_config, **config}
 
 
 
@@ -491,10 +503,11 @@ def basnet_hybrid_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
 # ========================= #
 # Losses dictionary
 
-__one_ring_losses__ = ["DiceLoss", "FocalTverskyLoss", "LogCoshDiceLoss"]
+__one_ring_losses__ = ["DiceLoss", "FocalTverskyLoss", "LogCoshDiceLoss", "BASNetHybridLoss"]
 LOSSES = {
     'dice_loss': DiceLoss, 'focal_tversky_loss': FocalTverskyLoss,'log_cosh_dice_loss': LogCoshDiceLoss,
-    "binary_crossentropy": BinaryCrossentropy, "categorical_crossentropy": CategoricalCrossentropy
+    "binary_crossentropy": BinaryCrossentropy, "categorical_crossentropy": CategoricalCrossentropy,
+    "basnet_hybrid_loss": BASNetHybridLoss
 }
 __all__ = ["DiceLoss", "FocalTverskyLoss","LogCoshDiceLoss", "__one_ring_losses__", "LOSSES"]
 
