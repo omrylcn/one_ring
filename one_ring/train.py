@@ -13,7 +13,7 @@ import pickle
 import tf2onnx
 
 
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Dict
 from omegaconf import DictConfig, ListConfig
 
 from tensorflow.keras.models import Model, load_model
@@ -30,7 +30,7 @@ from one_ring.logger import Logger
 # from one_ring.utils import snake_case_to_pascal_case
 import mlflow
 from one_ring.save import ModelSaver
-from one_ring.trace import initialize_mlflow,log_history,log_params,log_model
+from one_ring.trace import initialize_mlflow, log_history, log_params, log_model
 
 
 OPTIMIZERS = {
@@ -56,10 +56,11 @@ class Trainer:
         train_data: Dataset,
         val_data: Optional[Dataset] = None,
         optimizer: Optional[Optimizer] = None,
-        loss: Optional[List[Loss]] = None,
+        losses: Optional[List[Loss]] = None,
         metrics: Optional[List[Metric]] = None,
         callbacks: Optional[List[Callback]] = None,
         compiled_model: bool = False,
+        tracing_object: Optional[Dict] = None,
     ) -> None:
         """
         A class for training a model, encapsulating the setup for training and validation processes.
@@ -84,22 +85,23 @@ class Trainer:
             A list of callbacks for custom actions during training. Default is None.
         compiled_model : bool, optional
             Indicates if the model is already compiled. If False, the model will be compiled in the fit method. Default is False.
-
+        tracing_object : Dict, optional
+            A dictionary containing tracing objects such as mlflow, tensorboard, etc. Default is None.
         Attributes
         ----------
-        The Trainer class does not explicitly define attributes in the __init__ method documentation, as attributes are typically 
+        The Trainer class does not explicitly define attributes in the __init__ method documentation, as attributes are typically
         those that are accessible on the class instance and are intended for use outside of the class's internal mechanisms.
         However, the parameters provided to __init__ are used to initialize the class's internal state.
 
         Notes
         -----
-        The Trainer class is designed to abstract away the boilerplate code associated with training loops in TensorFlow, 
-        allowing users to focus on configuring their models, datasets, and training procedures without worrying about the 
+        The Trainer class is designed to abstract away the boilerplate code associated with training loops in TensorFlow,
+        allowing users to focus on configuring their models, datasets, and training procedures without worrying about the
         underlying mechanics of the training process.
 
         Examples
         --------
-        Assuming `config`, `model`, `train_data`, and optionally `val_data`, `optimizer`, `loss`, `metrics`, `callbacks` 
+        Assuming `config`, `model`, `train_data`, and optionally `val_data`, `optimizer`, `loss`, `metrics`, `callbacks`
         are defined appropriately:
 
         >>> trainer = Trainer(
@@ -123,11 +125,12 @@ class Trainer:
         self.train_data = train_data
         self.val_data = val_data
         self._optimizer = optimizer
-        self._loss = loss
+        self._loss = losses
         self._metrics = metrics
         self._callbacks = list(callbacks.values()) if callbacks else None
-
+        self._tracing_object = tracing_object
         self.saver = ModelSaver(model=self._model, config=self.config, processors=None)
+
         self._check_trainer_objects()  # check objects
         self._check_trainer_params()  # check parameters
 
@@ -177,8 +180,13 @@ class Trainer:
     def _check_trainer_params(self):
         "Check trainer config parameters"
         assert self.trainer_config["epochs"] > 0
-        assert self.trainer_config["optimizer"] is not None
-        assert self.trainer_config["losses"] is not None
+        assert self.trainer_config["experiment_name"] is not None
+        assert self.trainer_config["save_model_path"] is not None
+        assert (
+           "start" in self.trainer_config["lr"].keys() and "end" in self.trainer_config["lr"].keys()
+        ), f"lr should have start and end keys, not :{self.trainer_config['lr']}"
+        assert self.trainer_config["optimizer"] is not None or self._optimizer is not None
+        assert self.trainer_config["losses"] is not None or self._loss is not None
 
     @property
     def trainer_callbacks(self) -> None:
@@ -246,7 +254,7 @@ class Trainer:
 
     @property
     def trainer_optimizer(self):
-        optimizer = None
+        optimizer: Optimizer = None
         if self._optimizer is not None:
             optimizer = self._trainer_optimizer
         # else:
@@ -263,30 +271,40 @@ class Trainer:
             self.logger.error(message)
             raise ValueError(message)
 
-        optimizer = optimizer(**optimizer_params)
+        optimizer = optimizer(learning_rate=self.trainer_config["lr"]["start"], **optimizer_params)
         return optimizer
 
-    def _tracing_log_params(self):
+    def _initialize_tracing(self):
         """
-        Log configs  to mlflow
+        Initialize mlflow
+        """
+        initialize_mlflow(self.trainer_config["experiment_name"], self.uuid)
+
+    def _log_params(self):
+        """
+        Log configs to mlflow
         """
         log_params(self.config)
 
-    def _tracing_log_model(self):
+    def _log_model(self):
         """
         Log model to mlflow
         """
-        log_model(self._model,str(self.uuid))
+        log_model(self._model, str(self.uuid))
 
-    def _tracing_log_history(self, history, **kwargs):
+    def _log_history(self, history, **kwargs):
         """
         Log history to mlflow
         """
         log_history(history, **kwargs)
-        
 
-    def _tracing_initialize(self):
-        initialize_mlflow(self.trainer_config["experiment_name"], self.uuid)
+    def _log_object(self):
+        if self._tracing_object:
+            if "mlflow" in list(self._tracing_object.keys()):
+                for key, value in self._tracing_object["mlflow"].items():
+                    for k, v in value.items():
+                        new_k = f"{key}_{k}"
+                        mlflow.log_param(new_k, v)
 
     def compile_model(self):
         self.uuid = str(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
@@ -315,26 +333,16 @@ class Trainer:
             self.fit_counter = 0
             self.history = {}
             initial_epoch = 0
-            self._tracing_initialize()
-            #initialize_mlflow(self.trainer_config["experiment_name"], self.uuid)
-            self._tracing_log_params()
-
+            self._initialize_tracing()
+            self._log_params()
+            self._log_object()
             self.logger.info("Start training  ...")
         else:
             self.logger.info("Continue training ...")
             initial_epoch = self.trainer_config["epochs"] * self.fit_counter
-        
-        epochs = self.trainer_config["epochs"] * (self.fit_counter + 1)
-        # if self.fit_counter == 0:     
-        #     history = self._model.fit(
-        #         self.train_data,
-        #         epochs=self.trainer_config["epochs"],
-        #         callbacks=self.callbacks,
-        #         validation_data=self.val_data,
-        #         initial_epoch=initial_epoch,
-        #     )
 
-        # else:
+        epochs = self.trainer_config["epochs"] * (self.fit_counter + 1)
+
         history = self._model.fit(
             self.train_data,
             epochs=epochs,
@@ -342,24 +350,17 @@ class Trainer:
             validation_data=self.val_data,
             initial_epoch=initial_epoch,
         )
-            # self.history_dict[str(datetime.datetime.now())] = {"h": history.history, "id": self.uuid}
 
         current_time = str(datetime.datetime.now())
         self.logger.info(f"Training ended at {current_time}. History saved with id {self.uuid}")
         self.fit_counter += 1
 
-        self._tracing_log_history(history, initial_epoch=initial_epoch)
+        self._log_history(history, initial_epoch=initial_epoch)
         self._update_history(history)
-        #log_history(self.history)
 
         if self.trainer_config["save_model"]:
             path = self.trainer_config["save_model_path"]
             self.save(path)
-        #     self.save(self.trainer_config["save_model_path"])
-
-    # @property
-    # def history(self):
-    #     return self.history_dict
 
     def _update_history(self, history):
         for key, value in history.history.items():
@@ -431,20 +432,20 @@ class Trainer:
 
         # except Exception as e:
         #     raise ValueError("Model could not be loaded", e)
-    
+
     def end(self, log_model: bool = False) -> None:
         if log_model:
             try:
-                self._tracing_log_model()
+                self._log_model()
 
             except Exception as e:
                 self.logger.error(message=f"log_model method could not be executed. {e}")
-            
+
         self.logger.info("Training ended")
         mlflow.end_run()
 
     def test(self, data) -> None:
-            
+
         self._model.evaluate(data)
 
 
