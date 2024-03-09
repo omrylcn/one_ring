@@ -20,7 +20,11 @@ from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     LearningRateScheduler,
 )
+from tensorflow.keras import backend
+from keras.src.utils import io_utils
+
 from one_ring.utils import snake_case_to_pascal_case
+
 
 # from tf_seg.utils.plot import plot_confusion_matrix, confusion_matrix_to_iou_recall_precision, plot_to_image
 
@@ -68,9 +72,9 @@ class UpdateBestWeights(Callback):
 
     def on_epoch_end(self, epoch, logs=None) -> None:
         metric = logs[self.metric_name]
-      
-        if type(metric) == np.ndarray:       
-            if len(metric)>1:
+
+        if type(metric) == np.ndarray:
+            if len(metric) > 1:
                 metric = metric.mean()
         if self.monitor_op(metric, self.best_metric):
             self.best_metric = metric
@@ -78,6 +82,74 @@ class UpdateBestWeights(Callback):
 
     def on_train_end(self, logs=None) -> None:
         self.model.set_weights(self.best_weights)
+
+
+class OneRingLearningRateScheduler(LearningRateScheduler):
+    """
+    Learning rate scheduler that updates the learning rate at the end of every batch,
+    not just at the epoch boundaries. This provides finer control over the learning
+    rate adjustments during training, potentially leading to better training performance.
+
+    Parameters
+    ----------
+    schedule : function
+        A function that takes two inputs - an integer `step` (representing the current
+        training step) and a float `lr` (the current learning rate) - and returns a new
+        learning rate as a float. The function should define the learning rate schedule.
+    verbose : int, optional
+        Verbosity mode. 0 = silent, 1 = update messages. Defaults to 0.
+
+    Attributes
+    ----------
+    global_step : int
+        A counter tracking the number of steps (batches) seen by the scheduler.
+
+    Examples
+    --------
+    >>> def step_decay_schedule(step, lr):
+    ...     return lr * 0.1 if step % 1000 == 0 else lr
+    >>>
+    >>> model = tf.keras.models.Sequential([tf.keras.layers.Dense(10)])
+    >>> model.compile(optimizer=tf.keras.optimizers.SGD(learning_rate=0.01), loss='mse')
+    >>> callback = OneRingLearningRateScheduler(step_decay_schedule, verbose=1)
+    >>> # model.fit(x_train, y_train, epochs=10, callbacks=[callback])
+    """
+
+    def __init__(self, schedule, **kwargs) -> None:
+        super().__init__(schedule, **kwargs)
+        self.global_step = 0
+
+    def on_train_batch_end(self, batch, logs=None):
+
+        if not hasattr(self.model.optimizer, "lr"):
+            raise ValueError('Optimizer must have a "lr" attribute.')
+        try:  # new API
+            lr = float(backend.get_value(self.model.optimizer.lr))
+            lr = self.schedule(self.global_step, lr)
+        except TypeError:  # Support for old API for backward compatibility
+            lr = self.schedule(self.global_step)
+        if not isinstance(lr, (tf.Tensor, float, np.float32, np.float64)):
+            raise ValueError('The output of the "schedule" function ' f"should be float. Got: {lr}")
+        backend.set_value(self.model.optimizer.lr, backend.get_value(lr))
+
+        self.global_step += 1
+
+    def on_epoch_begin(self, epoch, logs=None):
+
+        if not hasattr(self.model.optimizer, "lr"):
+            raise ValueError('Optimizer must have a "lr" attribute.')
+
+        lr = float(backend.get_value(self.model.optimizer.lr))
+
+        if not isinstance(lr, (tf.Tensor, float, np.float32, np.float64)):
+            raise ValueError('The output of the "schedule" function ' f"should be float. Got: {lr}")
+
+        if self.verbose > 0:
+            io_utils.print_msg(f"\nEpoch {epoch + 1}: LearningRateScheduler setting learning " f"rate to {lr}.")
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        logs["lr"] = backend.get_value(self.model.optimizer.lr)
 
 
 keras_callbacks_lib = {
@@ -113,7 +185,6 @@ def get_callbacks(
         **custom_callbacks_lib,
     },
 ) -> Dict[str, Callback]:
-
     """
     Get callbacks from config file.
 
