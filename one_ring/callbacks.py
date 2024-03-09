@@ -84,7 +84,7 @@ class UpdateBestWeights(Callback):
         self.model.set_weights(self.best_weights)
 
 
-class OneRingLearningRateScheduler(LearningRateScheduler):
+class ORLearningRateCallback(LearningRateScheduler):
     """
     Learning rate scheduler that updates the learning rate at the end of every batch,
     not just at the epoch boundaries. This provides finer control over the learning
@@ -161,6 +161,7 @@ keras_callbacks_lib = {
 custom_callbacks_lib = {
     "meausre_total_time": MeasureTotalTime,
     "uptade_best_weights": UpdateBestWeights,
+    "one_ring_learning_rate_callback": ORLearningRateCallback,
 }
 
 
