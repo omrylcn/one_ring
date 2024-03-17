@@ -3,7 +3,7 @@ Wrapper class module
 
 """
 import tensorflow as tf
-from albumentations import Compose, save, load
+from albumentations import Compose, save, load,from_dict
 
 
 class AlbumentatiosWrapper:
@@ -44,3 +44,10 @@ class AlbumentatiosWrapper:
 
     def load(self, path):
         self.transforms = load(path, data_format="yaml")
+      
+
+    def to_dict(self):
+        return self.transforms.to_dict()
+    
+    def from_dict(self, data):
+        self.transforms = from_dict(data)

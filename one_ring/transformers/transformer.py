@@ -47,3 +47,35 @@ class Transformer:
     def load(self, path: str) -> None:
         """Load transformers"""
         self.transformer_object.load(path)
+
+        return self
+
+    def to_dict(self) -> Dict:
+        """Return transformers as dict"""
+        return self.transformer_object.to_dict()
+    
+    def from_dict(self, data: Dict=None) -> None:
+        """Load transformers from dict"""
+        data = data if data else self.config[self.name]
+    
+        self.transformer_object.from_dict(data)
+
+        return self
+    
+    def extract_params(self):
+        """Return transformer object for only mlflow logging"""
+        
+        params = {}
+        if  self.config["aug_type"] == "albumentations":
+            dict_params = self.to_dict()
+            params = {}
+            param= {}
+            for t in dict_params["transform"]["transforms"]:
+                for k,v in t.items():
+                    if k == "__class_fullname__":
+                        continue
+                    param[k] = v
+                params[t["__class_fullname__"]] = param
+
+        return params       
+    
