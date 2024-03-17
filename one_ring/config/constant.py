@@ -23,3 +23,10 @@ LOG_FOLDER = "logs"
 MODEL_TYPE_LIB = ["tf", "onnx"]
 ONNX_PROVIDERS = {"gpu":"CUDAExecutionProvider", "cpu":"CPUExecutionProvider"}
 ONNX_OPSET = 13
+
+
+# -------------------#
+# save part
+META_DATA_NAME = "meta_data.yaml"
+ONNX_NAME = "model.onnx"
+PROCESSORS_NAME = "processors.pkl"
