@@ -2,6 +2,7 @@ import os
 import pickle
 import json
 from omegaconf import OmegaConf
+import tensorflow as tf
 from tensorflow.data import Dataset
 from one_ring.config import ONNX_OPSET, META_DATA_NAME, ONNX_NAME, PROCESSORS_NAME
 from one_ring.deploy import save_model_as_onnx
@@ -83,9 +84,9 @@ class ModelSaver:
         None
         """
 
-        tf_path = os.path.join(path, "tensorflow")
+        tf_path = os.path.join(path, "tf")
         os.makedirs(tf_path, exist_ok=True)
-        self.model.save(tf_path)
+        self._save_model(self.model, tf_path)
         self.logger.info(f"Saved model to {tf_path}")
 
         meta_data_path = os.path.join(path, "meta_data")
@@ -104,6 +105,28 @@ class ModelSaver:
             onnx_filepath = os.path.join(onnx_path, onnx_name)
             self._save_as_onnx(self.model, onnx_filepath)
             self.logger.info(f"Saved model to {onnx_filepath}")
+    
+    def load(self, path: str,compile:bool,objects:dict) -> str:
+        """
+        Load the model from the provided filepath.
+
+        Parameters
+        ----------
+        path : str
+            The directory path where the model and related files are saved.
+
+        Returns
+        -------
+        str
+            The loaded model.
+        """
+        path = os.path.join(path, "tf")
+
+        return self._load_model(path,compile,objects)
+
+    def _save_model(self, model: str, path: str) -> None:
+        # Save the model in TensorFlow SavedModel format to the provided filepath
+        model.save(path)
 
     def _save_as_onnx(self, model: str, onnx_name: str, opset: int = 13) -> None:
         # Convert the tf.keras model to ONNX format and save to the provided filepath
@@ -118,6 +141,10 @@ class ModelSaver:
         filepath = os.path.join(path, filename)
         with open(filepath, "wb") as f:
             pickle.dump(self.processors, f)
+
+    def _load_model(self, path: str,compile:str,objects:dict) -> str:
+        # Load the model from the provided filepath
+        return tf.keras.models.load_model(path,compile=compile,custom_objects=objects)
 
 
 # Example usage

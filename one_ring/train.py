@@ -136,6 +136,7 @@ class Trainer:
 
         self.history = {}
         self.fit_counter = 0
+        self.save_path = None
 
         if compiled_model is False:
             self._model._is_compiled = False
@@ -183,7 +184,7 @@ class Trainer:
         assert self.trainer_config["experiment_name"] is not None
         assert self.trainer_config["save_model_path"] is not None
         assert (
-           "start" in self.trainer_config["lr"].keys() and "end" in self.trainer_config["lr"].keys()
+            "start" in self.trainer_config["lr"].keys() and "end" in self.trainer_config["lr"].keys()
         ), f"lr should have start and end keys, not :{self.trainer_config['lr']}"
         assert self.trainer_config["optimizer"] is not None or self._optimizer is not None
         assert self.trainer_config["losses"] is not None or self._loss is not None
@@ -375,7 +376,7 @@ class Trainer:
         else:
             self.logger.error(message="Validation data is not provided")
 
-    def save(self, path: str, root_dir="runs", meta_data_name="meta_data.pkl", onnx_name="model.onnx") -> None:
+    def save(self, path: str, root_dir="runs") -> None:
         """
         Saves the model to Tensorflow SavedModel and optionally to ONNX format. Also saves related metadata and preprocessor objects.
 
@@ -390,48 +391,59 @@ class Trainer:
         """
 
         path = os.path.join(root_dir, path, self.uuid)
-        print("PATH", path)
+        # print("PATH", path)
         os.makedirs(path, exist_ok=True)
-        self.saver.save(path, meta_data_name, onnx_name)
+        self.save_path = path
+        self.saver.save(path, train_ds=None, val_ds=None)
 
-    def load(self, path: str, checking_parameters: bool = True) -> None:
+    def load(self, path: str = None, compile: bool = True, objects: dict = None) -> None:
         """
-        Load model from Tensorflow SavedModel
+        Load a model from a TensorFlow SavedModel format.
 
         Parameters
         ----------
-        path: str
-            Path to load model
-        checking_parameters: bool, default: True
-            Check parameters of model and config file
-
+        path : str, optional
+            The path to the directory where the model is saved. If not specified, `self.save_path` is used.
+        compile : bool, default True
+            Whether to compile the model after loading.
+        objects : dict, optional
+            A dictionary of custom objects necessary for loading the model, such as custom layers.
         """
 
-        pass
-        # try:
-        #     _model = load_model(path)
-        #     if checking_parameters:
-        #         config = self.all_config["model"]
-        #         print(config)
-        #         print(config["input_shape"])
+        path = path or self.save_path
 
-        #         # input shape check config and loaded model
-        #         assert list(config["input_shape"]) == list(_model.input_shape[1:]), f"Input shape of model is not equal to config input shape {config['input_shape']} != {_model.input_shape[1:]}"
+        if not os.path.isdir(path):
+            self.logger.error("Path is not a valid directory.")
+            raise ValueError("Path is not a valid directory.")
 
-        #         # output shape check config and loaded model
-        #         config_output_shape = list(config["input_shape"])
-        #         config_output_shape[-1] = config["output_size"]
-        #         assert config_output_shape == list(_model.output_shape[1:])
+        try:
+            self.model = self.saver.load(path, compile=compile, custom_objects=objects)
+            self.logger.info(f"Model loaded successfully from '{path}'.")
+        except Exception as e:
+            self.logger.error(f"Failed to load the model from '{path}'. Error: {e}")
+            raise
 
-        #         # final activation check config and loaded model
-        #         model_last_activation = _model.layers[-1].activation.__name__
-        #         config_last_activation = config["final_activation"]
-        #         assert model_last_activation == config_last_activation, f"Final activation of model is not equal to config final activation {config_last_activation} != {model_last_activation}"
+    def get_custom_objects(self):
+        """
+        Get custom objects from the model.
 
-        #     self._model = _model
+        Returns
+        -------
+        dict
+            A dictionary of custom objects used in the model.
+        """
 
-        # except Exception as e:
-        #     raise ValueError("Model could not be loaded", e)
+        custom_objects = {}
+        if self._model._is_compiled:
+            for m in self.metrics:
+                if hasattr(m, "one_ring_type"):
+                    custom_objects[m.__class__.__name__] = m.__class__
+
+            for l in self.loss:
+                if hasattr(l, "one_ring_type"):
+                    custom_objects[l.__class__.__name__] = l.__class__
+
+        return custom_objects
 
     def end(self, log_model: bool = False) -> None:
         if log_model:
@@ -445,7 +457,6 @@ class Trainer:
         mlflow.end_run()
 
     def test(self, data) -> None:
-
         self._model.evaluate(data)
 
 
