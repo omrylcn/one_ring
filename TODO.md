@@ -1,9 +1,30 @@
+**New TODO List 16-03-2024**
+- [ ] Add Boundary Difference Over Union Loss For Medical Image Segmentation (https://arxiv.org/abs/2308.00220)
+- [ ] Add Unified Focal Loss: Generalising Dice and Cross Entropy-based Losses to Handle Class Imbalanced Medical Image Segmentation 
+- [ ] Fix load method for train class
+- [ ] Fix custom object save
+- [ ] Fix onnx save method
+- [ ] Add tensorrt integration
+- [ ] Add openvino integration
+- [ ] Integrate UNet+++ model
+- [ ] Add Grad CAM++ integration
+- [ ] Add basic test
+- [ ] Add more notebook for training different scenarios like instance segmentation
+- [ ] Test all exist models and fix bugs
+- [ ] Add more backbone like mobilenet variants
+- [ ] Add tensorboard callback with sample results
+- [ ] Add universal class like yolo to easily use any model for prediction and training
+- [ ] Enhance save object add best weights and add results images
+- [ ] add Transunet
+- [ ] Add other unet models
+- [ ] Add augmenation function logs for mlflow
+
+** Old TODO List **
 - [ ] Integrate Segformer model (huggingface)
 - [ ] Integrate Segformer model (Deepvision)
 - [ ] Add directory for pretrained models
 - [ ] Add training and inference examples
 - [ ] Add onnx and openvino models for segformer
-- [ ] Integrate UNet+++ model
 - [ ] Add UNet+++ training and inference notebooks
 - [ ] Integrate YOLOv8 model for segmentation (Keras-cv-attention)
 - [ ] Add training and inference examples for YOLOv8
@@ -14,14 +35,11 @@
 - [ ] Upload 3 different datasets to google cloud
 - [ ] Build dataset classes for each dataset
 - [ ] Add examples of segmentation training on each dataset
-- [ ] Add mlflow integration
-- [ ] Add onnx integration for inference
-- [ ] Add openvino integration for inference
-- [ ] Add evaluation functions
-- [ ] Add visualization functions and classes
-- [ ] Add overlay functionalities to easily plot
-- [ ] Add setup.py script for pip installation
-- [ ] Add Grad CAM++ integration
+- [x] Add mlflow integration
+- [x] Add evaluation functions
+- [x] Add visualization functions and classes
+- [x] Add overlay functionalities to easily plot
+- [x] Add setup.py script for pip installation
 
 
 
