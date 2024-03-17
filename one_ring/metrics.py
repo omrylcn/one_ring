@@ -12,7 +12,7 @@ from one_ring.utils.types import AcceptableDTypes
 class MeanMetricWrapper(tf.keras.metrics.Mean):
     """Wraps a stateless metric function with the Mean metric."""
 
-    one_ring_type = "metric"
+   
 
     def __init__(
         self,
@@ -43,6 +43,7 @@ class MeanMetricWrapper(tf.keras.metrics.Mean):
         super().__init__(name=name, dtype=dtype)
         self._fn = fn
         self._fn_kwargs = kwargs
+        self.one_ring_type = "metric"
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         """Accumulates metric statistics.
@@ -75,6 +76,10 @@ class MeanMetricWrapper(tf.keras.metrics.Mean):
         config = {k: v for k, v in self._fn_kwargs.items()}
         base_config = super().get_config()
         return {**base_config, **config}
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 
 class DiceScore(MeanMetricWrapper):

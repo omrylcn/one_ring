@@ -26,7 +26,7 @@ from tensorflow.python.util.tf_export import keras_export
 class LossFunctionWrapper(tf.keras.losses.Loss):
     """Wraps a loss function in the `Loss` class."""
 
-    one_ring_tpye = "loss"
+    
 
     def __init__(self, fn, reduction=tf.keras.losses.Reduction.AUTO, name=None, **kwargs):
         # convert numpy tensorflow doc style to numpy doc style
@@ -51,6 +51,7 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
         super().__init__(reduction=reduction, name=name)
         self.fn = fn
         self._fn_kwargs = kwargs
+        self.one_ring_type = "loss"
 
     def call(self, y_true: TensorLike, y_pred: TensorLike):
 
