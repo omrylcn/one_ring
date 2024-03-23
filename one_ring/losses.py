@@ -8,7 +8,6 @@
 
 """
 
-
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from one_ring.utils.types import FloatTensorLike, TensorLike, Tensor
@@ -25,8 +24,6 @@ from tensorflow.python.util.tf_export import keras_export
 
 class LossFunctionWrapper(tf.keras.losses.Loss):
     """Wraps a loss function in the `Loss` class."""
-
-    
 
     def __init__(self, fn, reduction=tf.keras.losses.Reduction.AUTO, name=None, **kwargs):
         # convert numpy tensorflow doc style to numpy doc style
@@ -54,7 +51,6 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
         self.one_ring_type = "loss"
 
     def call(self, y_true: TensorLike, y_pred: TensorLike):
-
         """Invokes the `LossFunctionWrapper` instance.
 
         Parameters
@@ -89,6 +85,7 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
     #         config[k] = tf.keras.backend.eval(v) if is_tensor_or_variable(v) else v
     #     base_config = super().get_config()
     #     return {**base_config, **config}
+
 
 # ========================= #
 # Jaccard loss and similarity
@@ -271,6 +268,7 @@ def log_cosh_dice_loss(y_true: TensorLike, y_pred: TensorLike, const: FloatTenso
     log_cosh_dice = tf.math.log((tf.exp(dice_loss_value) + tf.exp(-dice_loss_value)) / 2.0)
     return log_cosh_dice
 
+
 class LogCoshDiceLoss(LossFunctionWrapper):
     """
     Implements the Log-Cosh Dice loss.
@@ -300,7 +298,13 @@ class LogCoshDiceLoss(LossFunctionWrapper):
 
 
 @tf.function
-def tversky_coef(y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(),) -> Tensor:
+def tversky_coef(
+    y_true: TensorLike,
+    y_pred: TensorLike,
+    alpha: FloatTensorLike = 0.5,
+    gamma: FloatTensorLike = 4 / 3,
+    const: FloatTensorLike = K.epsilon(),
+) -> Tensor:
     """
     Tversky coefficient for 2-d samples.
 
@@ -343,7 +347,13 @@ def tversky_coef(y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike 
 
 
 @tf.function
-def tversky(y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(),) -> Tensor:
+def tversky(
+    y_true: TensorLike,
+    y_pred: TensorLike,
+    alpha: FloatTensorLike = 0.5,
+    gamma: FloatTensorLike = 4 / 3,
+    const: FloatTensorLike = K.epsilon(),
+) -> Tensor:
     """
     Tversky Loss.
 
@@ -387,8 +397,13 @@ def tversky(y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike = 0.5
 
 
 @tf.function
-def focal_tversky(y_true, y_pred, alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(),) -> Tensor:
-
+def focal_tversky(
+    y_true,
+    y_pred,
+    alpha: FloatTensorLike = 0.5,
+    gamma: FloatTensorLike = 4 / 3,
+    const: FloatTensorLike = K.epsilon(),
+) -> Tensor:
     """
     Focal Tversky Loss (FTL)
 
@@ -424,7 +439,7 @@ def focal_tversky(y_true, y_pred, alpha: FloatTensorLike = 0.5, gamma: FloatTens
     y_true = tf.squeeze(y_true)
 
     # (Tversky loss)**(1/gamma)
-    loss_val = tf.math.pow((1 - tversky_coef(y_true, y_pred, alpha=alpha, const=const)), 1/gamma)
+    loss_val = tf.math.pow((1 - tversky_coef(y_true, y_pred, alpha=alpha, const=const)), 1 / gamma)
 
     return loss_val
 
@@ -443,10 +458,10 @@ class FocalTverskyLoss(LossFunctionWrapper):
         The weight of `true positives` in the weighted average.
     gamma : float-tensor-like, optional (default=4/3)
         A tunable parameter within [1, 3].
-    
+
     See Also
     --------
-    Abraham, N. and Khan, N.M., 2019, April. A novel focal tversky loss function with improved      
+    Abraham, N. and Khan, N.M., 2019, April. A novel focal tversky loss function with improved
     attention u-net for lesion segmentation.https://arxiv.org/abs/1810.07842
 
     Examples
@@ -457,13 +472,20 @@ class FocalTverskyLoss(LossFunctionWrapper):
     >>> print(focal_tversky_loss(y_true, y_pred).numpy())
     """
 
-    def __init__(self, name="focal_tversky_loss", alpha: FloatTensorLike = 0.5, gamma: FloatTensorLike = 4 / 3, const: FloatTensorLike = K.epsilon(), **kwargs):
+    def __init__(
+        self,
+        name="focal_tversky_loss",
+        alpha: FloatTensorLike = 0.5,
+        gamma: FloatTensorLike = 4 / 3,
+        const: FloatTensorLike = K.epsilon(),
+        **kwargs
+    ):
         super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const, **kwargs)
-
 
 
 # ========================= #
 #  Basnet Losses
+
 
 @tf.function
 def basnet_hybrid_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
@@ -525,17 +547,72 @@ class BASNetHybridLoss(LossFunctionWrapper):
     #     return {**base_config, **config}
 
 
+# ========================= #
+# Combo Losses
+
+
+@tf.function
+def combo_loss(y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike = 0.5) -> Tensor:
+    """
+    Implements the Combo loss.
+
+    The Combo loss is a combination of the Dice loss and the Cross-Entropy loss.
+
+    Parameters
+    ----------
+    y_true : tensor-like
+        The ground truth values.
+    y_pred : tensor-like
+        The predicted values.
+    alpha : float-tensor-like, optional (default=0.5)
+        The weight of the Dice loss in the weighted average.
+
+    Returns
+    -------
+    loss : tensor
+        Loss values per sample.
+
+    """
+
+    dice_loss_value = dice_loss(y_true, y_pred)
+    cross_entropy_loss = BinaryCrossentropy(from_logits=False)(y_true, y_pred)
+
+    return alpha * dice_loss_value + (1 - alpha) * cross_entropy_loss
+
+
+class ComboLoss(LossFunctionWrapper):
+    """Implements the Combo loss.
+
+    The Combo loss is a combination of the Dice loss and the Cross-Entropy loss.
+
+    See Also
+    --------
+    https://arxiv.org/pdf/1805.02798.pdf
+
+    Examples
+    --------
+    >>> y_true = tf.constant([[0, 1, 0], [0, 0, 1]])
+    >>> y_pred = tf.constant([[0.1, 0.9, 0.1], [0, 0.5, 0.5]])
+    >>> combo_loss = ComboLoss()
+    >>> combo_loss(y_true, y_pred)
+    <tf.Tensor: shape=(), dtype=float32, numpy=0.8>
+    """
+
+    def __init__(self, name:str="combo_loss", alpha: FloatTensorLike = 0.5, **kwargs):
+        super().__init__(fn=combo_loss, name=name, alpha=alpha, **kwargs)
+
 
 # ========================= #
 # Losses dictionary
 
-__one_ring_losses__ = ["JaccardLoss","DiceLoss", "FocalTverskyLoss", "LogCoshDiceLoss", "BASNetHybridLoss"]
+__one_ring_losses__ = ["JaccardLoss", "DiceLoss", "FocalTverskyLoss", "LogCoshDiceLoss", "BASNetHybridLoss"]
 LOSSES = {
     "JaccardLoss": JaccardLoss,
-    'dice_loss': DiceLoss, 'focal_tversky_loss': FocalTverskyLoss,'log_cosh_dice_loss': LogCoshDiceLoss,
-    "binary_crossentropy": BinaryCrossentropy, "categorical_crossentropy": CategoricalCrossentropy,
-    "basnet_hybrid_loss": BASNetHybridLoss
+    "dice_loss": DiceLoss,
+    "focal_tversky_loss": FocalTverskyLoss,
+    "log_cosh_dice_loss": LogCoshDiceLoss,
+    "binary_crossentropy": BinaryCrossentropy,
+    "categorical_crossentropy": CategoricalCrossentropy,
+    "basnet_hybrid_loss": BASNetHybridLoss,
 }
-__all__ = ["DiceLoss", "FocalTverskyLoss","LogCoshDiceLoss", "__one_ring_losses__", "LOSSES"]
-
-
+__all__ = ["DiceLoss", "FocalTverskyLoss", "LogCoshDiceLoss", "__one_ring_losses__", "LOSSES"]
