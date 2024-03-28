@@ -9,17 +9,54 @@
 """
 
 import tensorflow as tf
-import tensorflow.keras.backend as K
-from one_ring.utils.types import FloatTensorLike, TensorLike, Tensor
+from tensorflow import keras
+from tensorflow.keras import backend as K
 from tensorflow.keras.losses import BinaryCrossentropy, CategoricalCrossentropy
-from one_ring.utils import is_tensor_or_variable
 from tensorflow.python.util.tf_export import keras_export
 
+from one_ring.utils.types import FloatTensorLike, TensorLike, Tensor
+from one_ring.utils import is_tensor_or_variable
 
 # import tensorflow as tf
 # from tensorflow.keras.losses import LossFunctionWrapper
 # from tensorflow.types.experimental import TensorLike, FloatTensorLike
 # from tensorflow.keras.backend import epsilon as K_epsilon
+
+
+def find_axis(data: TensorLike) -> tuple[int]:
+    """
+    Identifies spatial dimension indices in a tensor.
+
+    Parameters
+    ----------
+    data : object
+        A tensor-like object with `ndim` attribute, representing its number of dimensions.
+        Expected to be 3D (H, W, C) or 4D (N, H, W, C).
+
+    Returns
+    -------
+    tuple of int
+        Indices of the height and width dimensions. Returns (0, 1) for 3D and (1, 2) for 4D tensors.
+
+    Raises
+    ------
+    ValueError
+        If `data` does not have an `ndim` attribute or if `ndim` is not 3 or 4.
+
+    Example
+    -------
+    >>> find_axis(np.random.rand(64, 64, 3))
+    (0, 1)
+    >>> find_axis(np.random.rand(10, 64, 64, 3))
+    (1, 2)
+    """
+
+    if data.ndim == 3:
+        return (0, 1)
+    elif data.ndim == 4:
+        return (1, 2)
+    else:
+        raise ValueError(f"Data shape {data.shape} is not supported. Expected 3 or 4 dimensions (HWC or BHWC).")
 
 
 class LossFunctionWrapper(tf.keras.losses.Loss):
@@ -92,7 +129,7 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
 
 
 @tf.function
-def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
+def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis:tuple[int]) -> Tensor:
     """
     Computes the Jaccard similarity index for 2-d samples.
 
@@ -110,16 +147,21 @@ def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
 
     """
 
-    y_true = tf.reshape(y_true, [-1])
-    y_pred = tf.reshape(y_pred, [-1])
+    if axis is None:
+        axis = find_axis(y_true)
 
-    intersection = tf.reduce_sum(y_true * y_pred)
-    union = tf.reduce_sum(y_true + y_pred - y_true * y_pred)
-    return intersection / union
+    # y_true = tf.reshape(y_true, [-1])
+    # y_pred = tf.reshape(y_pred, [-1])
+
+    intersection = tf.keras.backend.sum(y_true * y_pred, axis=axis)
+    union = tf.keras.backend.sum(y_true + y_pred - y_true * y_pred, axis=axis)
+    iou_class = intersection / union
+
+    return tf.keras.backend.mean(iou_class)
 
 
 @tf.function
-def jaccard_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
+def jaccard_loss(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int]) -> Tensor:
     """
     Computes the Jaccard loss for 2-d samples.
 
@@ -137,12 +179,12 @@ def jaccard_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
 
     """
 
-    return 1 - jaccard_similarity(y_true, y_pred)
+    return 1 - jaccard_similarity(y_true, y_pred, axis)
 
 
 class JaccardLoss(LossFunctionWrapper):
     """
-    Implements the Jaccard loss.
+    Implements the Jaccard loss for image segmentation.
 
     The Jaccard loss is a measure of how well the predicted set matches the true set.
     It is defined as the following::
@@ -155,14 +197,16 @@ class JaccardLoss(LossFunctionWrapper):
 
     Examples
     --------
-    >>> y_true = tf.constant([[0, 1, 0], [0, 0, 1]], dtype=tf.float32)
-    >>> y_pred = tf.constant([[0.1, 0.9, 0.1], [0.1, 0.8, 0.1]], dtype=tf.float32)
+    >>> y_true = tf.constant([[[0, 1, 0], [0, 0, 1]]], dtype=tf.float32)
+    >>> y_pred = tf.constant([[[0.1, 0.9, 0.1], [0.1, 0.8, 0.1]]], dtype=tf.float32)
+    >>> print(y_true.shape)
+    ... (1, 2, 3)
     >>> jaccard_loss = JaccardLoss()
     >>> print(jaccard_loss(y_true, y_pred).numpy())
     """
 
-    def __init__(self, name="jaccard_loss", **kwargs):
-        super().__init__(fn=jaccard_loss, name=name, **kwargs)
+    def __init__(self, name="jaccard_loss", axis=(1, 2), **kwargs):
+        super().__init__(fn=jaccard_loss, name=name, axis=axis, **kwargs)
 
 
 # ========================= #
@@ -170,7 +214,9 @@ class JaccardLoss(LossFunctionWrapper):
 
 
 @tf.function()
-def dice_coef(y_true: TensorLike, y_pred: TensorLike, const: FloatTensorLike = K.epsilon()) -> Tensor:
+def dice_coef(
+    y_true: TensorLike, y_pred: TensorLike, axis: tuple[int], const: FloatTensorLike = K.epsilon()
+) -> Tensor:
     """
     Sørensen–Dice coefficient for 2-d samples.
 
@@ -190,26 +236,30 @@ def dice_coef(y_true: TensorLike, y_pred: TensorLike, const: FloatTensorLike = K
 
     """
 
-    # flatten 2-d tensors
-    y_true_pos = tf.reshape(y_true, [-1])
-    y_pred_pos = tf.reshape(y_pred, [-1])
+    # find spatial dimensions
+    # print(axis)
+    if axis is None:
+        axis = find_axis(y_true)
 
     # get true pos (TP), false neg (FN), false pos (FP).
-    true_pos = tf.reduce_sum(y_true_pos * y_pred_pos)
-    false_neg = tf.reduce_sum(y_true_pos * (1 - y_pred_pos))
-    false_pos = tf.reduce_sum((1 - y_true_pos) * y_pred_pos)
+
+    true_pos = tf.keras.backend.sum(y_true * y_pred, axis=axis)
+    false_neg = tf.keras.backend.sum(y_true * (1 - y_pred), axis=axis)
+    false_pos = tf.keras.backend.sum((1 - y_true) * y_pred, axis=axis)
 
     # 2TP/(2TP+FP+FN) == 2TP/()
     coef_val = (2.0 * true_pos + const) / (2.0 * true_pos + false_pos + false_neg)
 
-    return coef_val
+    return tf.keras.backend.mean(coef_val)
 
 
 @tf.function()
-def dice_loss(y_true: TensorLike, y_pred: TensorLike, const: FloatTensorLike = K.epsilon()) -> Tensor:
+def dice_loss(
+    y_true: TensorLike, y_pred: TensorLike, axis:tuple[int], const: FloatTensorLike = K.epsilon()
+) -> Tensor:
     """Sørensen–Dice Loss function for 2-d samples."""
 
-    loss = 1 - dice_coef(y_true, y_pred)
+    loss = 1 - dice_coef(y_true, y_pred, axis, const)
     return loss
 
 
@@ -235,8 +285,8 @@ class DiceLoss(LossFunctionWrapper):
 
     """
 
-    def __init__(self, const: FloatTensorLike = K.epsilon(), name="dice_loss", **kwargs):
-        super().__init__(fn=dice_loss, name=name, const=const, **kwargs)
+    def __init__(self, axis:tuple[int] = (1, 2), const: FloatTensorLike = K.epsilon(), name="dice_loss", **kwargs):
+        super().__init__(fn=dice_loss, name=name, axis=axis, const=const, **kwargs)
 
     # def get_config(self):
     #     config = {"const": self._fn_kwargs["const"]}
@@ -304,6 +354,7 @@ def tversky_coef(
     alpha: FloatTensorLike = 0.5,
     gamma: FloatTensorLike = 4 / 3,
     const: FloatTensorLike = K.epsilon(),
+    return_classwise: bool = False,
 ) -> Tensor:
     """
     Tversky coefficient for 2-d samples.
@@ -318,6 +369,8 @@ def tversky_coef(
         The weight of `true positives` in the weighted average.
     const : float-tensor-like, optional (default=K.epsilon())
         A constant that smooths the loss gradient and reduces numerical instabilities.
+    return_classwise : bool, optional (default=False)
+        If True, returns the Tversky coefficient for each class.
 
     See Also
     --------
@@ -332,18 +385,20 @@ def tversky_coef(
     """
 
     # flatten 2-d tensors
-    y_true_pos = tf.reshape(y_true, [-1])
-    y_pred_pos = tf.reshape(y_pred, [-1])
+    axis = find_axis(y_true)
 
     # get true pos (TP), false neg (FN), false pos (FP).
-    true_pos = tf.reduce_sum(y_true_pos * y_pred_pos)
-    false_neg = tf.reduce_sum(y_true_pos * (1 - y_pred_pos))
-    false_pos = tf.reduce_sum((1 - y_true_pos) * y_pred_pos)
+    true_pos = tf.keras.backend.sum(y_true * y_pred, axis=axis)
+    false_neg = tf.keras.backend.sum(y_true * (1 - y_pred), axis=axis)
+    false_pos = tf.keras.backend.sum((1 - y_true) * y_pred, axis=axis)
 
     # TP/(TP + a*FN + b*FP); a+b = 1
     coef_val = (true_pos + const) / (true_pos + alpha * false_neg + (1 - alpha) * false_pos + const)
 
-    return coef_val
+    if return_classwise:
+        return coef_val
+
+    return tf.keras.backend.mean(coef_val)
 
 
 @tf.function
@@ -478,7 +533,7 @@ class FocalTverskyLoss(LossFunctionWrapper):
         alpha: FloatTensorLike = 0.5,
         gamma: FloatTensorLike = 4 / 3,
         const: FloatTensorLike = K.epsilon(),
-        **kwargs
+        **kwargs,
     ):
         super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const, **kwargs)
 
@@ -598,7 +653,7 @@ class ComboLoss(LossFunctionWrapper):
     <tf.Tensor: shape=(), dtype=float32, numpy=0.8>
     """
 
-    def __init__(self, name:str="combo_loss", alpha: FloatTensorLike = 0.5, **kwargs):
+    def __init__(self, name: str = "combo_loss", alpha: FloatTensorLike = 0.5, **kwargs):
         super().__init__(fn=combo_loss, name=name, alpha=alpha, **kwargs)
 
 

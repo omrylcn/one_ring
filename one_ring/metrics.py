@@ -12,8 +12,6 @@ from one_ring.utils.types import AcceptableDTypes
 class MeanMetricWrapper(tf.keras.metrics.Mean):
     """Wraps a stateless metric function with the Mean metric."""
 
-   
-
     def __init__(
         self,
         fn: Callable,
@@ -76,7 +74,7 @@ class MeanMetricWrapper(tf.keras.metrics.Mean):
         config = {k: v for k, v in self._fn_kwargs.items()}
         base_config = super().get_config()
         return {**base_config, **config}
-    
+
     @classmethod
     def from_config(cls, config):
         return cls(**config)
@@ -85,21 +83,20 @@ class MeanMetricWrapper(tf.keras.metrics.Mean):
 class DiceScore(MeanMetricWrapper):
     """Computes the Dice score."""
 
-    def __init__(self, name: str = "dice_score", **kwargs):
-        super().__init__(fn=dice_coef, name=name, **kwargs)
+    def __init__(self, name: str = "dice_score", axis: tuple[int] = (1, 2), **kwargs):
+        super().__init__(fn=dice_coef, name=name, axis=axis, **kwargs)
 
 
 class JaccardScore(MeanMetricWrapper):
     """Computes the Jaccard score."""
 
-    def __init__(self, name: str = "jaccard_score", **kwargs):
-        super().__init__(fn=jaccard_similarity, name=name, **kwargs)
+    def __init__(self, name: str = "jaccard_score",axis:tuple[int]=(1,2), **kwargs):
+        super().__init__(fn=jaccard_similarity, name=name,axis=axis, **kwargs)
 
 
 __one_ring_metrics__ = ["DiceScore", "JaccardScore"]
 
 # to control choosing right metrics for segmentation
-METRICS = {'dice_score': DiceScore,"jaccard_score": JaccardScore}
+METRICS = {"dice_score": DiceScore, "jaccard_score": JaccardScore}
 
-__all__ = ["DiceScore","JaccardScore", "__one_ring_metrics__", "METRICS"]
-
+__all__ = ["DiceScore", "JaccardScore", "__one_ring_metrics__", "METRICS"]
