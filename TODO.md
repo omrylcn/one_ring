@@ -18,6 +18,7 @@
 - [ ] add Transunet
 - [ ] Add other unet models
 - [x] Add augmenation function logs for mlflow
+- [ ] Add theshold for metrics, default is 0.5
 
 ** Old TODO List **
 - [ ] Integrate Segformer model (huggingface)

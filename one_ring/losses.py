@@ -129,7 +129,7 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
 
 
 @tf.function
-def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis:tuple[int]) -> Tensor:
+def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None) -> Tensor:
     """
     Computes the Jaccard similarity index for 2-d samples.
 
@@ -147,6 +147,10 @@ def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis:tuple[int]) 
 
     """
 
+    # tf tensor casting
+    y_pred = tf.convert_to_tensor(y_pred)
+    y_true = tf.cast(y_true, y_pred.dtype)
+
     if axis is None:
         axis = find_axis(y_true)
 
@@ -161,7 +165,7 @@ def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis:tuple[int]) 
 
 
 @tf.function
-def jaccard_loss(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int]) -> Tensor:
+def jaccard_loss(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None) -> Tensor:
     """
     Computes the Jaccard loss for 2-d samples.
 
@@ -213,9 +217,8 @@ class JaccardLoss(LossFunctionWrapper):
 # Dice loss and variants
 
 
-@tf.function()
 def dice_coef(
-    y_true: TensorLike, y_pred: TensorLike, axis: tuple[int], const: FloatTensorLike = K.epsilon()
+    y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None, const: FloatTensorLike = K.epsilon()
 ) -> Tensor:
     """
     Sørensen–Dice coefficient for 2-d samples.
@@ -236,6 +239,10 @@ def dice_coef(
 
     """
 
+    # tf tensor casting
+    y_pred = tf.convert_to_tensor(y_pred)
+    y_true = tf.cast(y_true, y_pred.dtype)
+
     # find spatial dimensions
     # print(axis)
     if axis is None:
@@ -248,14 +255,14 @@ def dice_coef(
     false_pos = tf.keras.backend.sum((1 - y_true) * y_pred, axis=axis)
 
     # 2TP/(2TP+FP+FN) == 2TP/()
-    coef_val = (2.0 * true_pos + const) / (2.0 * true_pos + false_pos + false_neg)
+    coef_val = (2.0 * true_pos + const) / (2.0 * true_pos + false_pos + false_neg+const)
 
     return tf.keras.backend.mean(coef_val)
 
 
 @tf.function()
 def dice_loss(
-    y_true: TensorLike, y_pred: TensorLike, axis:tuple[int], const: FloatTensorLike = K.epsilon()
+    y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None, const: FloatTensorLike = K.epsilon()
 ) -> Tensor:
     """Sørensen–Dice Loss function for 2-d samples."""
 
@@ -285,7 +292,7 @@ class DiceLoss(LossFunctionWrapper):
 
     """
 
-    def __init__(self, axis:tuple[int] = (1, 2), const: FloatTensorLike = K.epsilon(), name="dice_loss", **kwargs):
+    def __init__(self, axis: tuple[int] = (1, 2), const: FloatTensorLike = K.epsilon(), name="dice_loss", **kwargs):
         super().__init__(fn=dice_loss, name=name, axis=axis, const=const, **kwargs)
 
     # def get_config(self):
@@ -295,7 +302,9 @@ class DiceLoss(LossFunctionWrapper):
 
 
 @tf.function()
-def log_cosh_dice_loss(y_true: TensorLike, y_pred: TensorLike, const: FloatTensorLike = K.epsilon()) -> Tensor:
+def log_cosh_dice_loss(
+    y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None, const: FloatTensorLike = K.epsilon()
+) -> Tensor:
     """
     Computes the log-cosh of the Dice loss.
 
@@ -314,7 +323,8 @@ def log_cosh_dice_loss(y_true: TensorLike, y_pred: TensorLike, const: FloatTenso
         Log-cosh Dice loss values per sample.
     """
 
-    dice_loss_value = dice_loss(y_true, y_pred, const)
+    dice_loss_value = dice_loss(y_true, y_pred, axis=axis, const=const)
+
     log_cosh_dice = tf.math.log((tf.exp(dice_loss_value) + tf.exp(-dice_loss_value)) / 2.0)
     return log_cosh_dice
 
@@ -339,8 +349,10 @@ class LogCoshDiceLoss(LossFunctionWrapper):
     <tf.Tensor: shape=(), dtype=float32, numpy=value>
     """
 
-    def __init__(self, const: FloatTensorLike = K.epsilon(), name="log_cosh_dice_loss", **kwargs):
-        super().__init__(fn=log_cosh_dice_loss, name=name, const=const, **kwargs)
+    def __init__(
+        self, name="log_cosh_dice_loss", axis: tuple[int] = (1, 2), const: FloatTensorLike = K.epsilon(), **kwargs
+    ):
+        super().__init__(fn=log_cosh_dice_loss, name=name, axis=axis, const=const, **kwargs)
 
 
 # ========================= #
@@ -352,9 +364,9 @@ def tversky_coef(
     y_true: TensorLike,
     y_pred: TensorLike,
     alpha: FloatTensorLike = 0.5,
-    gamma: FloatTensorLike = 4 / 3,
     const: FloatTensorLike = K.epsilon(),
     return_classwise: bool = False,
+    axis: tuple[int] = None,
 ) -> Tensor:
     """
     Tversky coefficient for 2-d samples.
@@ -384,13 +396,18 @@ def tversky_coef(
 
     """
 
+    # tf tensor casting
+    y_pred = tf.convert_to_tensor(y_pred)
+    y_true = tf.cast(y_true, y_pred.dtype)
+
     # flatten 2-d tensors
-    axis = find_axis(y_true)
+    if axis is None:
+        axis = find_axis(y_true)
 
     # get true pos (TP), false neg (FN), false pos (FP).
-    true_pos = tf.keras.backend.sum(y_true * y_pred, axis=axis)
-    false_neg = tf.keras.backend.sum(y_true * (1 - y_pred), axis=axis)
-    false_pos = tf.keras.backend.sum((1 - y_true) * y_pred, axis=axis)
+    true_pos = keras.backend.sum(y_true * y_pred, axis=axis)
+    false_neg = keras.backend.sum(y_true * (1 - y_pred), axis=axis)
+    false_pos = keras.backend.sum((1 - y_true) * y_pred, axis=axis)
 
     # TP/(TP + a*FN + b*FP); a+b = 1
     coef_val = (true_pos + const) / (true_pos + alpha * false_neg + (1 - alpha) * false_pos + const)
@@ -398,7 +415,7 @@ def tversky_coef(
     if return_classwise:
         return coef_val
 
-    return tf.keras.backend.mean(coef_val)
+    return keras.backend.mean(coef_val)
 
 
 @tf.function
@@ -406,7 +423,6 @@ def tversky(
     y_true: TensorLike,
     y_pred: TensorLike,
     alpha: FloatTensorLike = 0.5,
-    gamma: FloatTensorLike = 4 / 3,
     const: FloatTensorLike = K.epsilon(),
 ) -> Tensor:
     """
@@ -438,15 +454,8 @@ def tversky(
 
 
     """
-    # tf tensor casting
-    y_pred = tf.convert_to_tensor(y_pred)
-    y_true = tf.cast(y_true, y_pred.dtype)
 
-    # <--- squeeze-out length-1 dimensions.
-    y_pred = tf.squeeze(y_pred)
-    y_true = tf.squeeze(y_true)
-
-    loss_val = 1 - tversky_coef(y_true, y_pred, alpha=alpha, const=const)
+    loss_val = 1 - tversky_coef(y_true, y_pred, alpha=alpha, const=const, return_classwise=False)
 
     return loss_val
 
@@ -455,6 +464,7 @@ def tversky(
 def focal_tversky(
     y_true,
     y_pred,
+    axis: tuple[int] = None,
     alpha: FloatTensorLike = 0.5,
     gamma: FloatTensorLike = 4 / 3,
     const: FloatTensorLike = K.epsilon(),
@@ -485,18 +495,13 @@ def focal_tversky(
 
 
     """
-    # tf tensor casting
-    y_pred = tf.convert_to_tensor(y_pred)
-    y_true = tf.cast(y_true, y_pred.dtype)
-
-    # <--- squeeze-out length-1 dimensions.
-    y_pred = tf.squeeze(y_pred)
-    y_true = tf.squeeze(y_true)
 
     # (Tversky loss)**(1/gamma)
-    loss_val = tf.math.pow((1 - tversky_coef(y_true, y_pred, alpha=alpha, const=const)), 1 / gamma)
+    loss_val = keras.backend.pow(
+        (1 - tversky_coef(y_true, y_pred, axis=axis, alpha=alpha, const=const, return_classwise=True)), 1 / gamma
+    )
 
-    return loss_val
+    return keras.backend.mean(loss_val)
 
 
 class FocalTverskyLoss(LossFunctionWrapper):
@@ -530,12 +535,13 @@ class FocalTverskyLoss(LossFunctionWrapper):
     def __init__(
         self,
         name="focal_tversky_loss",
+        axis: tuple[int] = (1, 2),
         alpha: FloatTensorLike = 0.5,
         gamma: FloatTensorLike = 4 / 3,
         const: FloatTensorLike = K.epsilon(),
         **kwargs,
     ):
-        super().__init__(fn=focal_tversky, name=name, alpha=alpha, gamma=gamma, const=const, **kwargs)
+        super().__init__(fn=focal_tversky, name=name, axis=axis, alpha=alpha, gamma=gamma, const=const, **kwargs)
 
 
 # ========================= #
@@ -543,7 +549,7 @@ class FocalTverskyLoss(LossFunctionWrapper):
 
 
 @tf.function
-def basnet_hybrid_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
+def basnet_hybrid_loss(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None) -> Tensor:
     """
     Implements the hybrid loss proposed in BASNET, combining Binary Cross Entropy (BCE),
     Structural Similarity Index (SSIM), and Jaccard (IoU) losses.
@@ -567,7 +573,7 @@ def basnet_hybrid_loss(y_true: TensorLike, y_pred: TensorLike) -> Tensor:
 
     bce_loss = BinaryCrossentropy(from_logits=False)(y_true, y_pred)
     ms_ssim_loss = 1 - tf.image.ssim(y_true, y_pred, max_val=1)
-    jacard_loss = 1 - jaccard_similarity(y_true, y_pred)
+    jacard_loss = 1 - jaccard_similarity(y_true, y_pred, axis=axis)
 
     return bce_loss + ms_ssim_loss + jacard_loss
 
@@ -593,8 +599,8 @@ class BASNetHybridLoss(LossFunctionWrapper):
     >>> print(hybrid_loss(y_true, y_pred).numpy())
     """
 
-    def __init__(self, name="basnet_hybrid_loss", **kwargs):
-        super().__init__(fn=basnet_hybrid_loss, name=name, **kwargs)
+    def __init__(self, name="basnet_hybrid_loss", axis: tuple[int] = (1, 2), **kwargs):
+        super().__init__(fn=basnet_hybrid_loss, name=name, axis=axis, **kwargs)
 
     # def get_config(self):
     #     config = {}
@@ -607,7 +613,7 @@ class BASNetHybridLoss(LossFunctionWrapper):
 
 
 @tf.function
-def combo_loss(y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike = 0.5) -> Tensor:
+def combo_loss(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None, alpha: FloatTensorLike = 0.5) -> Tensor:
     """
     Implements the Combo loss.
 
@@ -629,7 +635,7 @@ def combo_loss(y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike = 
 
     """
 
-    dice_loss_value = dice_loss(y_true, y_pred)
+    dice_loss_value = dice_loss(y_true, y_pred, axis=axis)
     cross_entropy_loss = BinaryCrossentropy(from_logits=False)(y_true, y_pred)
 
     return alpha * dice_loss_value + (1 - alpha) * cross_entropy_loss
@@ -653,8 +659,228 @@ class ComboLoss(LossFunctionWrapper):
     <tf.Tensor: shape=(), dtype=float32, numpy=0.8>
     """
 
-    def __init__(self, name: str = "combo_loss", alpha: FloatTensorLike = 0.5, **kwargs):
-        super().__init__(fn=combo_loss, name=name, alpha=alpha, **kwargs)
+    def __init__(self, name: str = "combo_loss", axis: tuple[int] = (1, 2), alpha: FloatTensorLike = 0.5, **kwargs):
+        super().__init__(fn=combo_loss, name=name, axis=axis, alpha=alpha, **kwargs)
+
+
+# ========================= #
+# Unified Losses
+
+
+@tf.function
+def binary_focal_loss(
+    y_true: TensorLike,
+    y_pred: TensorLike,
+    axis: tuple[int] = None,
+    alpha: FloatTensorLike = 0.25,
+    gamma: FloatTensorLike = 2.0,
+) -> TensorLike:
+    """
+    Binary Focal Loss
+
+    Parameters
+    ----------
+    y_true : TensorLike
+        The ground truth values.
+    y_pred : TensorLike
+        The predicted values.
+    alpha : FloatTensorLike, optional (default=0.25)
+        The weighting factor for the positive class in the binary focal loss.
+    gamma : FloatTensorLike, optional (default=2.0)
+        The focusing parameter to modulate the loss for well-classified examples.
+
+    Returns
+    -------
+    loss : TensorLike
+        The computed binary focal loss.
+    """
+    epsilon_val = K.epsilon()
+    y_pred = K.clip(y_pred, epsilon_val, 1.0 - epsilon_val)
+    bce = -y_true * K.log(y_pred) - (1 - y_true) * K.log(1 - y_pred)
+    fl = alpha * K.pow((1 - y_pred), gamma) * bce + (1 - alpha) * K.pow(y_pred, gamma) * bce
+    return K.mean(fl, axis=axis)
+
+
+@tf.function
+def categorical_focal_loss(
+    y_true: TensorLike, y_pred: TensorLike, alpha: FloatTensorLike = 0.25, gamma: FloatTensorLike = 2.0, axis: int = -1
+) -> TensorLike:
+    """
+    Categorical Focal Loss, with an adjustable axis parameter.
+
+    Parameters
+    ----------
+    y_true : TensorLike
+        The ground truth values, expected to be in one-hot encoded format.
+    y_pred : TensorLike
+        The predicted values.
+    alpha : FloatTensorLike, optional (default=0.25)
+        The weighting factor for the focal loss to address class imbalance.
+    gamma : FloatTensorLike, optional (default=2.0)
+        The focusing parameter to reduce the loss contribution from easy examples and focus more on hard examples.
+    axis : int, optional (default=-1)
+        The axis along which to sum the focal loss. Typically, this is the channel axis.
+
+    Returns
+    -------
+    loss : TensorLike
+        The computed categorical focal loss.
+    """
+    epsilon_val = K.epsilon()
+    y_pred = K.clip(y_pred, epsilon_val, 1.0 - epsilon_val)
+    cce = -y_true * K.log(y_pred)
+    fl = alpha * K.pow((1 - y_pred), gamma) * cce
+    return K.mean(K.sum(fl, axis=axis))
+
+
+class FocalLoss(LossFunctionWrapper):
+    """
+    Implements Focal Loss for handling class imbalance by reducing the relative loss for well-classified examples
+    and focusing more on hard to classify examples. Can be used for both binary and multi-class classification.
+
+    The loss equation is -alpha * (1 - p_t)^gamma * log(p_t) for the binary case, and an extension of this for the
+    multi-class case, where p_t is the model's estimated probability for each class.
+
+    Parameters
+    ----------
+    mode : str, optional (default="binary")
+        Mode of the focal loss function, "binary" or "categorical".
+    axis : int, optional (default=-1)
+        The axis along which the focal loss is applied. Typically, this is the channel axis.
+    alpha : float, optional (default=0.25)
+        The weighting factor alpha for the focal loss.
+    gamma : float, optional (default=2.0)
+        The focusing parameter gamma to balance the focal loss.
+
+    See Also
+    --------
+    Lin, T.Y., et al. "Focal Loss for Dense Object Detection." IEEE Transactions on Pattern Analysis
+    and Machine Intelligence, https://arxiv.org/abs/1708.02002
+
+    Examples
+    --------
+    >>> y_true = tf.constant([[0, 1, 0], [0, 0, 1]], dtype=tf.float32)
+    >>> y_pred = tf.constant([[0.1, 0.9, 0.1], [0.1, 0.8, 0.1]], dtype=tf.float32)
+    >>> focal_loss = FocalLoss(mode="binary")
+    >>> print(focal_loss(y_true, y_pred).numpy())
+    """
+
+    def __init__(self, name="focal_loss", mode="binary", axis=-1, alpha=0.25, gamma=2.0, **kwargs):
+        if mode == "binary":
+            fn = binary_focal_loss
+        elif mode == "categorical":
+            fn = categorical_focal_loss
+        else:
+            raise ValueError("FocalLoss mode must be 'binary' or 'categorical'")
+
+        super().__init__(fn=fn, name=name, **kwargs)
+
+
+def sym_unified_focal_loss(
+    y_true: TensorLike,
+    y_pred: TensorLike,
+    mode: str = "binary",
+    gamma: FloatTensorLike = 2.0,
+    alpha: FloatTensorLike = 0.25,
+    loss_weight: FloatTensorLike = 0.5,
+    axis: tuple[int] = -1,
+    const: FloatTensorLike = K.epsilon(),
+) -> TensorLike:
+    """
+    Implements the Symmetric Unified Focal Loss (SUFL), a combination of Focal loss and
+    Tversky loss (as approximated by the focal_tversky function), designed to balance the
+    importance of true positives and false positives, without directly accounting for class imbalance.
+
+    Parameters
+    ----------
+    y_true : TensorLike
+        The ground truth values.
+    y_pred : TensorLike
+        The predicted values.
+    mode : str
+        The mode of operation, either "binary" or "categorical".
+    gamma : FloatTensorLike
+        The focusing parameter for the Focal loss.
+    alpha : FloatTensorLike
+        The weight of the Dice loss (via Tversky index) in the weighted average.
+    loss_weight : FloatTensorLike
+        The weight of the Focal Loss component in the combined loss calculation.
+    axis : tuple[int]
+        The spatial dimensions over which to calculate the loss.
+    const : FloatTensorLike
+        A constant that smooths the loss gradient and reduces numerical instabilities.
+
+    Returns
+    -------
+    TensorLike
+        The computed Symmetric Unified Focal Loss values per sample.
+    """
+
+    ftl = focal_tversky(y_true, y_pred, alpha=alpha,axis=(1,2),gamma=gamma, const=const)
+
+    if mode == "binary":
+        fl = binary_focal_loss(y_true, y_pred, axis=None, alpha=alpha, gamma=gamma)
+    elif mode == "categorical":
+        fl = categorical_focal_loss(y_true, y_pred, alpha=alpha, gamma=gamma, axis=axis)
+
+    else:
+        raise ValueError("Invalid mode specified. Choose either 'binary' or 'categorical'.")
+
+    # Combine Focal Loss and Tversky-based Loss with adjustable weighting
+    sufl_loss = loss_weight * fl + (1 - loss_weight) * ftl
+
+    return sufl_loss
+
+
+class SymmetricUnifiedFocalLoss(LossFunctionWrapper):
+    """
+    Implements the Symmetric Unified Focal Loss (SUFL), a combination of Focal loss and
+    Tversky loss (as approximated by the focal_tversky function), designed to balance the
+    importance of true positives and false positives, without directly accounting for class imbalance.
+
+    Parameters
+    ----------
+    mode : str, optional (default="binary")
+        The mode of operation, either "binary" or "categorical".
+    gamma : float, optional (default=2.0)
+        The focusing parameter for the Focal loss.
+    alpha : float, optional (default=0.25)
+        The weight of the Dice loss (via Tversky index) in the weighted average.
+    loss_weight : float, optional (default=0.5)
+        The weight of the Focal Loss component in the combined loss calculation.
+    axis : tuple[int], optional (default=-1)
+        The spatial dimensions over which to calculate the loss.
+    const : float, optional (default=K.epsilon())
+        A constant that smooths the loss gradient and reduces numerical instabilities.
+
+    Returns
+    -------
+    TensorLike
+        The computed Symmetric Unified Focal Loss values per sample.
+    """
+
+    def __init__(
+        self,
+        name: str = "symmetric_unified_focal_loss",
+        mode: str = "binary",
+        gamma: FloatTensorLike = 2.0,
+        alpha: FloatTensorLike = 0.25,
+        loss_weight: FloatTensorLike = 0.5,
+        axis: tuple[int] = -1,
+        const: FloatTensorLike = K.epsilon(),
+        **kwargs,
+    ):
+        super().__init__(
+            fn=sym_unified_focal_loss,
+            name=name,
+            mode=mode,
+            gamma=gamma,
+            alpha=alpha,
+            loss_weight=loss_weight,
+            axis=axis,
+            const=const,
+            **kwargs,
+        )
 
 
 # ========================= #
