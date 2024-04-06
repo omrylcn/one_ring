@@ -24,21 +24,36 @@ def get_data_info(data_dict) -> dict:
     return data_info
 
 
-def log_params(config):
+def log_params(config, log_part=None):
     """
     Log configs  to mlflow
     """
-    log_params = list(config)  # ["data", "model", "general"]
+    log_params = log_part if log_part else list(config)  # ["data", "model", "general"]
 
     for l_param in log_params:
         for k, v in config[l_param].items():
             k = l_param + "_" + k
-            #print(f"{k}: {v}")
-            
             mlflow.log_param(k, v)
 
 
-def log_history(history,initial_epoch=0): #log_best=None):
+def log_albumentation(cfg, prefix):
+
+    # assume composee
+    tr_cfg = cfg["transform"]["transforms"]
+
+    for t in tr_cfg:
+        # Use the transformation class name as part of the parameter name
+        class_name = t["__class_fullname__"].split(".")[-1]  # Extracts the class name without the full module path
+        param_name = f"{prefix}_{class_name}"
+
+        # Prepare a dictionary with the parameters, excluding '__class_fullname__'
+        params = {k: v for k, v in t.items() if k != "__class_fullname__"}
+
+        # Log the parameters of each transformation as a separate parameter, converting the dictionary to a JSON string
+        mlflow.log_param(param_name, params)
+
+
+def log_history(history, initial_epoch=0):  # log_best=None):
     """
     Log history to mlflow
 
@@ -50,13 +65,13 @@ def log_history(history,initial_epoch=0): #log_best=None):
     log_best : dict
         Best metrics of training
     """
-    
-    history_object = history.history if hasattr(history, 'history') else history
-    
+
+    history_object = history.history if hasattr(history, "history") else history
+
     for key in history_object.keys():
         epoch = initial_epoch
         for i in range(len(history_object[key])):
-            epoch+=1
+            epoch += 1
             mlflow.log_metric(key, float(history_object[key][i]), step=epoch)
 
         # # last element is max value
@@ -64,16 +79,24 @@ def log_history(history,initial_epoch=0): #log_best=None):
         #     mlflow.log_metric("best_" + key, float(log_best[key]))
 
 
-def generate_run_name():
+
+
+def generate_run_name() -> str:
     """
-    Generate run name
+    Generate a unique run name based on the current datetime.
+
+    The run name is in the format YYYY-MM-DD_HH-MM-SS.
+
+    Returns:
+        str: A string representing the current datetime in the format YYYY-MM-DD_HH-MM-SS.
     """
 
     now = datetime.datetime.now()
     return now.strftime("%Y-%m-%d_%H-%M-%S")
 
 
-def initialize_mlflow(experiment_name,run_name):
+
+def initialize_mlflow(experiment_name, run_name):
     """
     Initialize mlflow
     """
@@ -87,15 +110,15 @@ def initialize_mlflow(experiment_name,run_name):
 
         mlflow.set_experiment(experiment_name)
         active_run = mlflow.active_run()
-        
+
         if active_run is None:
             mlflow.start_run(run_name=run_name)
-        
-        elif active_run.info.run_id!=run_name:
+
+        elif active_run.info.run_id != run_name:
             mlflow.end_run()
             mlflow.start_run(run_name=run_name)
         else:
-            pass    
+            pass
 
     except Exception as e:
         print(e)
