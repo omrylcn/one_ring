@@ -30,8 +30,8 @@ from one_ring.logger import Logger
 # from one_ring.utils import snake_case_to_pascal_case
 import mlflow
 from one_ring.save import ModelSaver
-from one_ring.trace import initialize_mlflow, log_history, log_params, log_model
-
+from one_ring.trace import initialize_mlflow, log_history, log_params, log_model,log_albumentation
+from one_ring.callbacks import get_callbacks
 
 OPTIMIZERS = {
     "sgd": SGD,
@@ -56,7 +56,7 @@ class Trainer:
         train_data: Dataset,
         val_data: Optional[Dataset] = None,
         optimizer: Optional[Optimizer] = None,
-        losses: Optional[List[Loss]] = None,
+        loss: Optional[Loss] = None,
         metrics: Optional[List[Metric]] = None,
         callbacks: Optional[List[Callback]] = None,
         compiled_model: bool = False,
@@ -77,7 +77,7 @@ class Trainer:
             The dataset used for validation. Default is None.
         optimizer : tf.keras.optimizers.Optimizer, optional
             The optimizer to use during training. Default is None.
-        loss : List[tf.keras.losses.Loss], optional
+        loss : tf.keras.losses.Loss, optional
             The loss function or functions to use. Default is None.
         metrics : List[tf.keras.metrics.Metric], optional
             The list of metrics to evaluate during training. Default is None.
@@ -125,7 +125,7 @@ class Trainer:
         self.train_data = train_data
         self.val_data = val_data
         self._optimizer = optimizer
-        self._loss = losses
+        self._loss = loss
         self._metrics = metrics
         self._callbacks = list(callbacks.values()) if callbacks else None
         self._tracing_object = tracing_object
@@ -143,137 +143,77 @@ class Trainer:
 
     def _check_trainer_objects(self) -> None:
         "Check parameters types"
-        assert isinstance(self.config, (dict, DictConfig, ListConfig))
-        assert isinstance(self._model, Model)
-        assert isinstance(self.train_data, Dataset)
+        types = [
+            (self.config, (dict, DictConfig, ListConfig)),
+            (self._model, Model),
+            (self.train_data, Dataset),
+            (self.val_data, (Dataset, type(None))),
+            (self._optimizer, (Optimizer,type(None))),
+            (self._loss, (Loss, type(None))),
+            (self._metrics, (list, type(None))),
+            (self._callbacks, (list, type(None))),
+       
+        ]
 
-        if self.val_data:
-            assert isinstance(self.val_data, Dataset)
+        for obj, t in types:
+            assert isinstance(obj, t), f"'{obj}' should be instance of {t}"
 
         if self._callbacks:
-            if isinstance(self._callbacks, (List)):
-                assert isinstance(self._callbacks, (List)), "'callbacks' object should be list"
-                if len(self._callbacks) > 0:
-                    for callback in self._callbacks:
-                        assert isinstance(callback, Callback)
-            else:
-                assert isinstance(
-                    self._callbacks, (Callback)
-                ), "a callback should be instance of tf.keras.callbacks.Callback"
-
-        if self._optimizer:
-            assert isinstance(self._optimizer, Optimizer)
-
-        if self._loss:
-            assert isinstance(self._loss, (List)), "'loss' should be instance of tf.keras.losses.Loss"
-            if len(self._loss) > 0:
-                for loss in self._loss:
-                    assert isinstance(loss, Loss), " a member of 'loss' should be instance of tf.keras.losses.Loss"
+            for callback in self._callbacks:
+                assert isinstance(callback, Callback), "a callback should be instance of tf.keras.callbacks.Callback"
 
         if self._metrics:
-            assert isinstance(self._metrics, (List)), "'metrics' object should be list[tf.keras.metrics.Metric]"
-            if len(self._metrics) > 0:
-                for metric in self._metrics:
-                    assert isinstance(
-                        metric, Metric
-                    ), " a member of 'metrics' should be instance of tf.keras.metrics.Metric"
+            for metric in self._metrics:
+                assert isinstance(metric, Metric), " a member of 'metrics' should be instance of tf.keras.metrics.Metric"
 
     def _check_trainer_params(self):
-        "Check trainer config parameters"
-        assert self.trainer_config["epochs"] > 0
-        assert self.trainer_config["experiment_name"] is not None
-        assert self.trainer_config["save_model_path"] is not None
-        assert (
-            "start" in self.trainer_config["lr"].keys() and "end" in self.trainer_config["lr"].keys()
-        ), f"lr should have start and end keys, not :{self.trainer_config['lr']}"
-        assert self.trainer_config["optimizer"] is not None or self._optimizer is not None
-        assert self.trainer_config["losses"] is not None or self._loss is not None
+        required_params = ["epochs", "experiment_name","save_model","verbose","deploy_onnx"]
+        for param in required_params:
+            assert self.trainer_config.get(param) is not None, f"{param} is required in trainer_config"
 
     @property
-    def trainer_callbacks(self) -> None:
-        "Convert  list of callbacks"
-        callbacks = []
+    def trainer_callbacks(self):
+        # Direct return as _callbacks is always a list now
+        if self.config.callbacks:
+            callbacks = get_callbacks(self.config.callbacks)
+            callbacks = list(callbacks.values())
+            self._callbacks.extend(callbacks)
 
-        if self._callbacks:
-            assert isinstance(self._callbacks, (List))
-            if type(self._callbacks) == list:
-                return self._callbacks
-            else:
-                return list(self._callbacks)
-
-        else:
-            return callbacks
+        return self._callbacks
 
     @property
     def trainer_loss(self):
-        losses = []
-        if self._loss is not None:
-            # assert isinstance(self._loss, tf.keras.losses.Loss), f"Expected instance of tf.keras.losses.Loss, but got {type(self._loss)}"
-            losses = self._loss
-
-        elif "losses" in self.trainer_config.keys():
-            for loss_name in self.trainer_config["losses"]:
-                loss = LOSSES.get(loss_name)
-
-                if loss is None:
-                    message = f"{loss_name} is not implemented in LOSSES dict. Please check tf.keras.losses or provide a custom loss instance."
-                    # warning
-                    self.logger.warning(message=message)
-                    # raise ValueError(message=message)
-                else:
-                    losses.append(loss())
-
-        if len(losses) == 0:
-            # message = "loss is not specified in config file or in loss object in __init__() method "
-            message = "No loss is specified in config file or in loss object in __init__() method."
-            self.logger.error(message)
-            raise ValueError(message)
-        return losses
+        # Simplified handling for loss configuration
+        loss = self._loss or self.trainer_config.get("losses")
+        if isinstance(loss, str) and loss in LOSSES:
+            return LOSSES[loss]()
+        elif loss is None:
+            self.logger.error("No loss specified.")
+            raise ValueError("No loss specified in configuration or provided directly.")
+        return loss
 
     @property
     def trainer_metrics(self):
+        # Streamlined metrics assembly
         metrics = []
-        if "metrics" in self.trainer_config.keys():
-            for metric_name in self.trainer_config["metrics"]:
-                metric = METRICS.get(metric_name)
-
-                if metric is None:
-                    message = f"{metric_name} is not implemented in METRICS dict. Please check tf.keras.metrics or provide a custom metric instance."
-                    self.log(message=message, level=1)  # warning
-                    continue
-
-                metrics.append(metric())
-
-        if self._metrics is not None:
-            for metric in self._metrics:
-                assert isinstance(
-                    metric, Metric
-                ), f"Expected instances of tf.keras.metrics.Metric, but got {type(metric)}"
-                metrics.append(metric)
-
+        if self.trainer_config.get("metrics"):
+            metrics += [METRICS[name]() for name in self.trainer_config["metrics"] if name in METRICS]
+        if self._metrics:
+            metrics += [metric for metric in self._metrics if isinstance(metric, Metric)]
         return metrics
 
     @property
     def trainer_optimizer(self):
-        optimizer: Optimizer = None
-        if self._optimizer is not None:
-            optimizer = self._trainer_optimizer
-        # else:
-        elif "optimizer" in self.trainer_config.keys():
-            optimizer_params = self.trainer_config["optimizer"]
-            optimizer_name = optimizer_params["name"]
-            optimizer_params = optimizer_params["params"]
-            optimizer = OPTIMIZERS.get(optimizer_name)
-            if optimizer is None:
-                message = f"{optimizer_name} is not implemented in OPTIMIZERS dict. Please check tf.keras.optimizers or provide a custom optimizer instance."
-                self.logger.warning(message=message)
-        else:
-            message = "optimizer is not specified in config file or in optimizer object in __init__() method "
-            self.logger.error(message)
-            raise ValueError(message)
-
-        optimizer = optimizer(learning_rate=self.trainer_config["lr"]["start"], **optimizer_params)
-        return optimizer
+        # Corrected and optimized optimizer retrieval
+        if self._optimizer:
+            return self._optimizer
+        optimizer_config = self.trainer_config.get("optimizer")
+        if optimizer_config and "name" in optimizer_config and optimizer_config["name"] in OPTIMIZERS:
+            optimizer_class = OPTIMIZERS[optimizer_config["name"]]
+            optimizer_params = optimizer_config.get("params", {})
+            return optimizer_class(**optimizer_params)
+        self.logger.error("Optimizer configuration invalid or missing.")
+        raise ValueError("Invalid optimizer configuration.")
 
     def _initialize_tracing(self):
         """
@@ -285,7 +225,18 @@ class Trainer:
         """
         Log configs to mlflow
         """
-        log_params(self.config)
+        log_part= ["trainer","data","model","callbacks"]
+        log_params(self.config, log_part=log_part)
+    
+    def _log_aug_params(self):
+        prefix = "aug"
+        mlflow.log_param(f"{prefix}_type", self.config["augmentation"].aug_type)
+        if self.config["augmentation"].aug_type == "albumentations":
+            log_albumentation(self.config["augmentation"]["train"],prefix="aug_train")
+            log_albumentation(self.config["augmentation"]["test"],prefix="aug_test")
+        else:
+            self.logger.error(f"Invalid augmentation type: {self.config['augmentation'].aug_type}")
+            raise NotImplementedError
 
     def _log_model(self):
         """
@@ -336,6 +287,7 @@ class Trainer:
             initial_epoch = 0
             self._initialize_tracing()
             self._log_params()
+            self._log_aug_params()
             self._log_object()
             self.logger.info("Start training  ...")
         else:
