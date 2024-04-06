@@ -4,7 +4,7 @@ from tensorflow.keras.metrics import BinaryAccuracy, MeanIoU, CategoricalAccurac
 from tensorflow.keras.metrics import binary_accuracy, categorical_accuracy
 
 from one_ring.losses import dice_coef, jaccard_similarity
-from one_ring.utils.types import AcceptableDTypes
+from one_ring.utils.types import AcceptableDTypes,FloatTensorLike
 
 # from tensorflow.keras.metrics import MeanMetricWrapper
 
@@ -83,15 +83,15 @@ class MeanMetricWrapper(tf.keras.metrics.Mean):
 class DiceScore(MeanMetricWrapper):
     """Computes the Dice score."""
 
-    def __init__(self, name: str = "dice_score", axis: tuple[int] = (1, 2), **kwargs):
-        super().__init__(fn=dice_coef, name=name, axis=axis, **kwargs)
+    def __init__(self, name: str = "dice_score", axis: tuple[int] = (1, 2), threshold:FloatTensorLike=0.5, **kwargs):
+        super().__init__(fn=dice_coef, name=name, axis=axis, threshold=threshold, **kwargs)
 
 
 class JaccardScore(MeanMetricWrapper):
     """Computes the Jaccard score."""
 
-    def __init__(self, name: str = "jaccard_score",axis:tuple[int]=(1,2), **kwargs):
-        super().__init__(fn=jaccard_similarity, name=name,axis=axis, **kwargs)
+    def __init__(self, name: str = "jaccard_score",axis:tuple[int]=(1,2), threshold:FloatTensorLike=0.5, **kwargs):
+        super().__init__(fn=jaccard_similarity, name=name,axis=axis,threshold=threshold ,**kwargs)
 
 
 __one_ring_metrics__ = ["DiceScore", "JaccardScore"]
