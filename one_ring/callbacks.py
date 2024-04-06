@@ -181,7 +181,7 @@ def _set_callbacks(name: str, config: dict) -> Callback:
 
 def get_callbacks(
     config: Union[DictConfig, ListConfig],
-    callbacks_lib: Dict[str, Callback] = {
+    callbacks_lib: Dict[str, Callback] = {  # A dictionary containing callbacks that come with Keras and custom callbacks
         **keras_callbacks_lib,
         **custom_callbacks_lib,
     },
@@ -191,28 +191,33 @@ def get_callbacks(
 
     Parameters
     ----------
-    config: Union[DictConfig, ListConfig]
-        Configuration for training
+    config : Union[DictConfig, ListConfig]
+        Configuration for training. This should be an OmegaConf object,
+        which is a hierarchical dictionary.
+
+    callbacks_lib : dict, optional
+        A dictionary containing callbacks that come with Keras and custom callbacks.
+        Defaults to a dictionary that combines Keras callbacks and custom callbacks.
 
     Returns
     -------
-    callbacks: List[Callback]
-        List of callbacks
+    callbacks : dict
+        A dictionary containing callbacks that will be used during the training process.
+        The keys of the dictionary are the names of the callbacks and the values are the callback objects.
 
     """
-    pass
 
+    # Make a copy of the config object to avoid modifying the original object.
     config = config.copy()
 
+    # Initialize an empty dictionary to store the callback objects.
     callbacks = {}
 
+    # Go through each item in the config object.
     for key, value in config.items():
-        # class_name = value["class_name"]
-        # params = value["params"]
-        c = _set_callbacks(key, value)
 
+        c = _set_callbacks(key, value)
         callbacks[key] = c
-        # print(snake_case_to_pascal_case(callback))
 
     return callbacks
 

@@ -129,7 +129,7 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
 
 
 @tf.function
-def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None) -> Tensor:
+def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None,threshold:FloatTensorLike=None) -> Tensor:
     """
     Computes the Jaccard similarity index for 2-d samples.
 
@@ -148,8 +148,15 @@ def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] 
     """
 
     # tf tensor casting
+
     y_pred = tf.convert_to_tensor(y_pred)
     y_true = tf.cast(y_true, y_pred.dtype)
+
+    if threshold is not None:
+        # Binarize predictions based on the specified threshold if provided
+        y_pred = tf.cast(y_pred > threshold, y_true.dtype)
+    
+    
 
     if axis is None:
         axis = find_axis(y_true)
@@ -218,7 +225,7 @@ class JaccardLoss(LossFunctionWrapper):
 
 
 def dice_coef(
-    y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None, const: FloatTensorLike = K.epsilon()
+    y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None, const: FloatTensorLike = K.epsilon(),threshold:FloatTensorLike=None
 ) -> Tensor:
     """
     Sørensen–Dice coefficient for 2-d samples.
@@ -242,14 +249,16 @@ def dice_coef(
     # tf tensor casting
     y_pred = tf.convert_to_tensor(y_pred)
     y_true = tf.cast(y_true, y_pred.dtype)
+    
+    if threshold is not None:
+        # Binarize predictions based on the specified threshold if provided
+        y_pred = tf.cast(y_pred > threshold, y_true.dtype)
 
     # find spatial dimensions
-    # print(axis)
     if axis is None:
         axis = find_axis(y_true)
 
     # get true pos (TP), false neg (FN), false pos (FP).
-
     true_pos = tf.keras.backend.sum(y_true * y_pred, axis=axis)
     false_neg = tf.keras.backend.sum(y_true * (1 - y_pred), axis=axis)
     false_pos = tf.keras.backend.sum((1 - y_true) * y_pred, axis=axis)
