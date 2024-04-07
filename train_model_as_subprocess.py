@@ -35,6 +35,7 @@ from one_ring.callbacks import ORLearningRateCallback
 from one_ring.scheduler import ORLearningRateScheduler
 from one_ring.utils import generate_overlay_image, calculate_confusion_matrix_and_report, plot_history_dict
 from one_ring.utils import set_memory_growth
+import multiprocessing
 
 warnings.filterwarnings("ignore")
 tf.get_logger().setLevel(level="ERROR")
@@ -71,51 +72,50 @@ parser.add_argument(
 )
 
 
-args = parser.parse_args()
-config = get_config(config_filename="spinal_cord")
-config.model.backbone_name = args.backbone if args.backbone else config.model.backbone_name
-config.trainer.losses = args.loss if args.loss else config.trainer.loss
 
+def process_training(config_name,loss_name,backbone=None):
 
+    config = get_config(config_filename=config_name)
+    config.model.backbone_name = backbone if backbone else config.model.backbone_name
 
-tracing_object = {"mlflow": {}}
+    train_data_loader, val_data_loader = get_data_loader(config.data, train_data=True, val_data=True, test_data=False)
+    tr_transforms_object = Transformer(config.augmentation, "train").from_dict()
+    ts_transforms_object = Transformer(config.augmentation, "test").from_dict()
+    train_dataset = train_data_loader.load_data(transform_func=tr_transforms_object).prefetch(tf.data.AUTOTUNE)
+    val_dataset = val_data_loader.load_data(transform_func=ts_transforms_object, shuffle=False).prefetch(tf.data.AUTOTUNE)
 
-IM_SIZE = config.data["image_size"][0]
-aug_config = {
-    "aug_prob": 0.3,
-    "random_contrast_limit": 0.2,
-    "random_brightness_limit": 0.2,
-    "rotate_limit": 10,
-}
+    callbacks = {}
+    steps_per_epoch = len(train_dataset)
+    lr_schedule = ORLearningRateScheduler(
+        strategy=config.trainer.lr_scheduler["name"],
+        total_epochs=config.trainer.epochs,
+        steps_per_epoch=steps_per_epoch,
+        **config.trainer.lr_scheduler["params"],
+    ).get()
 
-train_data_loader, val_data_loader = get_data_loader(config.data, train_data=True, val_data=True, test_data=False)
-tr_transforms_object = Transformer(config.augmentation, "train").from_dict()
-ts_transforms_object = Transformer(config.augmentation, "test").from_dict()
-train_dataset = train_data_loader.load_data(transform_func=tr_transforms_object).prefetch(tf.data.AUTOTUNE)
-val_dataset = val_data_loader.load_data(transform_func=ts_transforms_object, shuffle=False).prefetch(tf.data.AUTOTUNE)
+    log_dir = f"board_logs/{config.trainer.experiment_name}/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+    callbacks["tensorboard"] = tf.keras.callbacks.TensorBoard(
+        log_dir=log_dir, histogram_freq=1, write_images=True, write_graph=True, update_freq="epoch"
+    )  # , profile_batch='500,520')
+    callbacks["lr_sch"] = ORLearningRateCallback(lr_schedule)
 
+    loss = loss_dict[loss_name](**params)
+    metrics = [Recall(), Precision(), JaccardScore()]
 
-callbacks = {}
-steps_per_epoch = len(train_dataset)
-lr_schedule = ORLearningRateScheduler(
-    strategy=config.trainer.lr_scheduler["name"],
-    total_epochs=config.trainer.epochs,
-    steps_per_epoch=steps_per_epoch,
-    **config.trainer.lr_scheduler["params"],
-).get()
+    model = AttUnet(**config.model).build_model()
+    trainer = Trainer(config, model, train_dataset, val_dataset, callbacks=callbacks, metrics=metrics,loss=loss)
+    trainer.fit(continue_training=True)
+    trainer.evaluate()
 
+    mlflow.log_param("loss_name",loss_name)
+    [mlflow.log_param(f"loss_{k}",v) for k,v in params.items()]
 
-log_dir = f"board_logs/{config.trainer.experiment_name}/" + datetime.now().strftime("%Y%m%d-%H%M%S")
-callbacks["tensorboard"] = tf.keras.callbacks.TensorBoard(
-    log_dir=log_dir, histogram_freq=1, write_images=True, write_graph=True, update_freq="epoch"
-)  # , profile_batch='500,520')
-callbacks["lr_sch"] = ORLearningRateCallback(lr_schedule)
+    trainer.end()
+    tf.keras.backend.clear_session()
 
+if __name__ == "__main__":
 
-loss_name = "symmetric_unified_focal_loss"
-params = {"gamma": 4 / 3, "alpha": 0.3, "loss_weight": 0.7}
-
-loss_dict = {
+    loss_dict = {
     "focal_loss": FocalLoss,
     "dice_loss": DiceLoss,
     "jaccard_loss": JaccardLoss,
@@ -124,17 +124,15 @@ loss_dict = {
     "symmetric_unified_focal_loss": SymmetricUnifiedFocalLoss,
 }
 
-loss = loss_dict[loss_name](**params)
-metrics = [Recall(), Precision(), JaccardScore()]
+params = {"gamma": 4 / 3, "alpha": 0.3, "loss_weight": 0.7}
 
-model = AttUnet(**config.model).build_model()
-trainer = Trainer(config, model, train_dataset, val_dataset, callbacks=callbacks, metrics=metrics,loss=loss,tracing_object=tracing_object)
-trainer.fit(continue_training=True)
-trainer.evaluate()
+for loss_name in loss_dict.keys():
+    #loss_name="symmetric_unified_focal_loss"
+    try:
+        process_training("spinal_cord",loss_name=loss_name,backbone="EfficientNetB0")
+    except:
+        raise
+        pass
 
-mlflow.log_param("loss_name",loss_name)
-[mlflow.log_param(f"loss_{k}",v) for k,v in params.items()]
 
-
-trainer.end()
 # model = trainer._model

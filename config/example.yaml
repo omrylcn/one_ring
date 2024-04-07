@@ -1,10 +1,10 @@
 # not using tuple !
 #base: null
 trainer:
-  experiment_name: lr_scheduler
-  save_model_path: lr_scheduler
+  experiment_name: test_camvid
+  save_model_path: loss_focal_tversky_exp
   save_model: false
-  epochs: 25
+  epochs: 10
   lr: {"start": 0.001, "end": 0.0001}
   optimizer: { name: adam, params: {} }
   losses:  null #[dice_loss]  #[[dice_loss] #[binary_crossentropy]
@@ -12,23 +12,20 @@ trainer:
   verbose: 1
   deploy_onnx: false
   lr_scheduler: 
-    "name": cosine_decay_restarts # cosine_decay_wtih_warmup, cosine_decay_restarts,cosine_decay_no_warmup
-    "params": {"min_lr": 0.00001,"max_lr": 0.003, "warmup_epochs": 5}
+    "name": cosine_decay_with_warmup  #, cosine_decay_restarts,cosine_decay_no_warmup
+    "params": {"min_lr": 0.0001,"max_lr": 0.003, "warmup_epochs": 5}
     
-
-
-
 data:
   base: null
-  name: spinal_v1
-  function_name: custom # it is used camvid dataset to generate binary data
-  path: data/spinal_primal # "ignis/data/segmentation/data_v2",
-  classes: [spinal]
+  name: custom_camvid
+  function_name: camvid #custom # it is used camvid dataset to generate binary data
+  path: ./data/camvid 
+  classes: ["Rood", "Sky","Car"]
   normalizing: false
-  palette: [[255, 255, 255]]
+  palette: [[128, 64, 128], [128, 128, 128],[64,0,128]]
   one_hot_encoding: true # target output shape
-  background_adding: false # add target background class
-  image_size: [512, 512]
+  background_adding: true # add target background class
+  image_size: [224, 224]
   batch_size: 4 #
   output_type: [tf.float32, tf.float32] # this is for camvid data types after data processing
   channels: [3, 3] # image and mask channels
@@ -37,19 +34,78 @@ augmentation:
   base: null #./config/_base/aug_file.yaml
   aug_type: albumentations # only albumentations
   load_style: file # module
-  train: null
-  test: null
+  train: 
+    __version__: 1.3.1
+    transform:
+      __class_fullname__: Compose
+      additional_targets: {}
+      bbox_params: null
+      is_check_shapes: true
+      keypoint_params: null
+      p: 1.0
+      transforms:
+      - __class_fullname__: Resize
+        always_apply: false
+        height: 224
+        interpolation: 1
+        p: 1
+        width: 224
+      - __class_fullname__: HorizontalFlip
+        always_apply: false
+        p: 0.1
+      - __class_fullname__: VerticalFlip
+        always_apply: false
+        p: 0.1
+      - __class_fullname__: Rotate
+        always_apply: false
+        border_mode: 4
+        crop_border: false
+        interpolation: 1
+        limit:
+        - -10
+        - 10
+        mask_value: null
+        p: 0.1
+        rotate_method: largest_box
+        value: null
+      - __class_fullname__: RandomSizedCrop
+        always_apply: false
+        height: 224
+        interpolation: 1
+        min_max_height:
+        - 180
+        - 224
+        p: 0.1
+        w2h_ratio: 1.0
+        width: 224
+
+  test:
+    __version__: 1.3.1
+    transform:
+      __class_fullname__: Compose
+      additional_targets: {}
+      bbox_params: null
+      is_check_shapes: true
+      keypoint_params: null
+      p: 1.0
+      transforms:
+      - __class_fullname__: Resize
+        always_apply: false
+        height: 224
+        interpolation: 1
+        p: 1
+        width: 224
 
 model:
   base: null
   name: AttUnet
-  n_filters: [32,40,48,56,64] #[16,32,64,128,256] #[12,32,64,96,128] #[12, 24, 32, 48, 96] #[32,48,64,128,256] #[32, 64, 128,256] #[32,64,128,256,512]
-  input_shape: [512, 512, 3]
-  final_activation: sigmoid
+  n_filters: [8,10,12,14,16] #[32, 48, 64, 96, 128] #[16,32,64,128,256] #[12,32,64,96,128] #[12, 24, 32, 48, 96] #[32,48,64,128,256] #[32, 64, 128,256] #[32,64,128,256,512]
+  input_shape: [224, 224, 3]
+  final_activation: softmax #sigmoid
   activation: relu
   backbone_name: EfficientNetB0  # "ResNet50", None
   pretrained: imagenet
-  output_size: 1
+  output_size: 4
 
 
 callbacks:
@@ -61,84 +117,3 @@ callbacks:
       params: { metric_name: val_dice_score, mode: max },
     }
  
-
-
-
-
-
-
-
-
-
-# model:
-#   class_path: anomalib.models.Padim
-#   init_args:
-#     input_size:
-#       - 256 # Height
-#       - 256 # Width
-#     backbone: resnet18
-#     pre_trained: true
-#     layers:
-#       - layer1
-#       - layer2
-#       - layer3
-
-# compile:
-#   adaptive_threshold: true
-#   default_image_threshold: null
-#   default_pixel_threshold: null
-#   image_metric_names:
-#     - F1Score
-#     - AUROC
-#   pixel_metric_names:
-#     - F1Score
-#     - AUROC
-#   normalization_method: min_max
-
-# trainer:
-#   logger: true
-#   accelerator: auto # <"cpu", "gpu", "tpu", "ipu", "hpu", "auto">
-#   accumulate_grad_batches: 1
-#   amp_backend: native
-#   auto_lr_find: false
-#   auto_scale_batch_size: false
-#   auto_select_gpus: false
-#   benchmark: false
-#   check_val_every_n_epoch: 1 # Don't validate before extracting features.
-#   default_root_dir: null
-#   detect_anomaly: false
-#   deterministic: false
-#   devices: 1
-#   enable_checkpointing: true
-#   enable_model_summary: true
-#   enable_progress_bar: true
-#   fast_dev_run: false
-#   gpus: null # Set automatically
-#   gradient_clip_val: 0
-#   ipus: null
-#   limit_predict_batches: 1.0
-#   limit_test_batches: 1.0
-#   limit_train_batches: 1.0
-#   limit_val_batches: 1.0
-#   log_every_n_steps: 50
-#   max_epochs: 1
-#   max_steps: -1
-#   max_time: null
-#   min_epochs: null
-#   min_steps: null
-#   move_metrics_to_cpu: false
-#   multiple_trainloader_mode: max_size_cycle
-#   num_nodes: 1
-#   num_processes: null
-#   num_sanity_val_steps: 0
-#   overfit_batches: 0.0
-#   plugins: null
-#   precision: 32
-#   profiler: null
-#   reload_dataloaders_every_n_epochs: 0
-#   replace_sampler_ddp: true
-#   resume_from_checkpoint: null
-#   sync_batchnorm: false
-#   tpu_cores: null
-#   track_grad_norm: -1
-#   val_check_interval: 1.0 # Don't validate before extracting features.

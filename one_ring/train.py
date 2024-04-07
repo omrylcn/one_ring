@@ -323,7 +323,7 @@ class Trainer:
                 self.history[key] = value
 
     def evaluate(self) -> None:
-        if self.val_data:
+        if self.val_data and self._model._is_compiled :
             self._model.evaluate(self.val_data)
         else:
             self.logger.error(message="Validation data is not provided")

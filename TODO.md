@@ -1,6 +1,6 @@
 **New TODO List 16-03-2024**
 - [ ] Add Boundary Difference Over Union Loss For Medical Image Segmentation (https://arxiv.org/abs/2308.00220)
-- [ ] Add Unified Focal Loss: Generalising Dice and Cross Entropy-based Losses to Handle Class Imbalanced Medical Image Segmentation 
+- [X] Add Unified Focal Loss: Generalising Dice and Cross Entropy-based Losses to Handle Class Imbalanced Medical Image Segmentation 
 - [x] Fix load method for train class
 - [x] Fix custom object save
 - [x] Fix onnx save method
@@ -18,7 +18,7 @@
 - [ ] add Transunet
 - [ ] Add other unet models
 - [x] Add augmenation function logs for mlflow
-- [ ] Add theshold for metrics, default is 0.5
+- [X] Add theshold for metrics, default is 0.5
 
 ** Old TODO List **
 - [ ] Integrate Segformer model (huggingface)
