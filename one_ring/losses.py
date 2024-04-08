@@ -129,7 +129,7 @@ class LossFunctionWrapper(tf.keras.losses.Loss):
 
 
 @tf.function
-def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None,threshold:FloatTensorLike=None,**kwargs) -> Tensor:
+def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] = None,threshold:FloatTensorLike=None,const: FloatTensorLike = K.epsilon(),**kwargs) -> Tensor:
     """
     Computes the Jaccard similarity index for 2-d samples.
 
@@ -166,7 +166,7 @@ def jaccard_similarity(y_true: TensorLike, y_pred: TensorLike, axis: tuple[int] 
 
     intersection = tf.keras.backend.sum(y_true * y_pred, axis=axis)
     union = tf.keras.backend.sum(y_true + y_pred - y_true * y_pred, axis=axis)
-    iou_class = intersection / union
+    iou_class = (intersection+const)/ (union+const)
 
     return tf.keras.backend.mean(iou_class)
 
