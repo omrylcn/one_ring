@@ -49,7 +49,7 @@ class DeepLabV3Plus(ModelBuilder):
         name: str = "deeplabv3plus",
         input_shape: Tuple = (224, 224, 3),
         atrous_rates: List[int] = [6, 12, 18],
-        filters: int = 256,
+        n_filters: int = 256,
         activation: str = "relu",
         backbone_name: str = "ResNet50",
         pretrained: str = "imagenet",
@@ -65,7 +65,7 @@ class DeepLabV3Plus(ModelBuilder):
         self.name = name
         self.input_shape = input_shape
         self.atrous_rates = atrous_rates
-        self.filters = filters
+        self.filters = n_filters
         self.activation_name = activation
         self.backbone_name = backbone_name
         self.pretrained = pretrained
@@ -73,20 +73,22 @@ class DeepLabV3Plus(ModelBuilder):
         self.freeze_backbone = freeze_backbone
         self.freeze_batch_norm = freeze_batch_norm
         # self.backbone_type = bakcbone_type
+        print(self.filters)
+        if type(self.filters) == list:
+            self.filters = self.filters[-1]
 
         self.conv_low_level_features = DeepLabConv(n_filter=48, kernel_size=1, name="conv_low_level_features")
-        self.conv1 = DeepLabConv(n_filter=filters, kernel_size=1, name="conv1")
-        self.aspp = AtrousSpatialPyramidPooling(atrous_rates, filters)
+        self.conv1 = DeepLabConv(n_filter=self.filters, kernel_size=1, name="conv1")
+        self.aspp = AtrousSpatialPyramidPooling(atrous_rates, n_filter=self.filters)
         self.up_sampling1 = UpSampling2D(size=(4, 4), interpolation="bilinear")
         self.concat = Concatenate(axis=-1)
-        self.conv2 = DeepLabConv(n_filter=filters, kernel_size=3, name="conv2")
-        self.conv3 = DeepLabConv(n_filter=filters, kernel_size=3, name="conv3")
+        self.conv2 = DeepLabConv(n_filter=self.filters, kernel_size=3, name="conv2")
+        self.conv3 = DeepLabConv(n_filter=self.filters, kernel_size=3, name="conv3")
         self.up_sampling2 = UpSampling2D(size=(4, 4), interpolation="bilinear")
         self.final_layer = Conv2D(output_size, kernel_size=1, activation=final_activation, padding="same", name="output")
         
     def build_model(self) -> Model:
         inputs = Input(shape=self.input_shape, name="input")
-
         if self.backbone_name is not None:
             self.backbone = get_backbone(
                 self.backbone_name,

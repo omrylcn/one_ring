@@ -48,6 +48,8 @@ class Unet(ModelBuilder):
         final_activation: str = "sigmoid",
         backbone_name: str = None,
         pretrained: str = "imagenet",
+        freeze_backbone: bool = True,
+        **kwargs,
     ) -> None:
         """Unet constructor."""
 
@@ -57,6 +59,7 @@ class Unet(ModelBuilder):
         self.activation_name = activation
         self.backbone_name = backbone_name
         self.pretrained = pretrained
+        self.freeze_backbone = freeze_backbone
         self.name = name
         self.output_size = output_size
 
@@ -142,7 +145,7 @@ class Unet(ModelBuilder):
             return [c0, *connection_list, b2]
 
         else:
-            self.backbone = get_backbone(self.backbone_name, self.pretrained, inputs, depth=len(self.n_filters))
+            self.backbone = get_backbone(self.backbone_name, self.pretrained, inputs, depth=len(self.n_filters),freeze_backbone=self.freeze_backbone)
 
             return [
                 c0,

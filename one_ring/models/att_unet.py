@@ -34,7 +34,9 @@ class AttUnet(ModelBuilder):
         The name of the backbone architecture to use. This backbone will be a pre-trained model and is optional.
     pretrained : str
         Whether to use pretrained weights for the backbone. Can be either "imagenet" for pretrained imagenet weights, or None for random initialization.
-
+    freeze_backbone : bool
+        Whether to freeze the weights of the backbone model. If True, the weights of the backbone model will not be updated during training.
+        
     Notes
     -----
     Unet with Attention Mechanism combines the powerful U-Net architecture with attention gates, 
@@ -61,6 +63,7 @@ class AttUnet(ModelBuilder):
         backbone_name: str = None,
         pretrained: str = "imagenet",
         freeze_backbone: bool = False,
+        **kwargs,
     ) -> None:
         """Unet constructor."""
 
