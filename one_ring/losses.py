@@ -899,6 +899,112 @@ class SymmetricUnifiedFocalLoss(LossFunctionWrapper):
         )
 
 
+
+# ========================= #
+# Boundary Difference Over Union Loss
+
+def boundary_dou_loss(y_true: TensorLike, y_pred: TensorLike, n_classes: int,**kwargs) -> tf.Tensor:
+    """
+    Computes the Boundary Distance Output Loss for image segmentation tasks with multi-class outputs.
+
+    Parameters
+    ----------
+    y_true : TensorLike
+        The ground truth values, one-hot encoded.
+    y_pred : TensorLike
+        The predicted values.
+    n_classes : int
+        The number of classes.
+
+    Returns
+    -------
+    loss : tf.Tensor
+        Computed loss per sample.
+    """
+
+    y_true = tf.convert_to_tensor(y_true, dtype=tf.float32)
+    y_pred = tf.convert_to_tensor(y_pred, dtype=tf.float32)
+  
+    loss = 0.0
+    for i in range(n_classes):
+        target = y_true[:, :, :, i:i+1]
+        score = y_pred[:, :, :, i:i+1]
+        loss += _adaptive_size(score, target)
+    return loss / n_classes
+
+def _adaptive_size(score, target,**kwargs):
+    """
+    Helper function to compute adaptive size component of the loss.
+
+    Parameters
+    ----------
+    score : tf.Tensor
+        Predicted scores for a single class.
+    target : tf.Tensor
+        Ground truth for the same class.
+    
+    Returns
+    -------
+    loss : tf.Tensor
+        Computed loss for the class.
+    """
+    kernel = tf.constant([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=tf.float32)
+    kernel = tf.reshape(kernel, [3, 3, 1, 1])
+    padding_out = tf.pad(target, [[0, 0], [1, 1], [1, 1], [0, 0]], mode="CONSTANT", constant_values=0)
+    
+    Y = tf.nn.conv2d(padding_out, kernel, strides=[1, 1, 1, 1], padding="VALID")
+    Y = Y * target
+    Y = tf.where(Y == 5, x=tf.zeros_like(Y), y=Y)
+    
+    C = tf.math.count_nonzero(Y, dtype=tf.float32)
+    S = tf.math.count_nonzero(target, dtype=tf.float32)
+    smooth = 1e-5
+    alpha = 1 - (C + smooth) / (S + smooth)
+    alpha = 2 * alpha - 1
+    alpha = tf.minimum(alpha, 0.8)  # Truncated alpha
+    
+    intersect = tf.reduce_sum(score * target)
+    y_sum = tf.reduce_sum(target * target)
+    z_sum = tf.reduce_sum(score * score)
+    loss = (z_sum + y_sum - 2 * intersect + smooth) / (z_sum + y_sum - (1 + alpha) * intersect + smooth)
+
+    return loss
+
+class BoundaryDoULoss(LossFunctionWrapper):
+    """
+    Implements the Boundary Distance Output Loss for image segmentation tasks.
+
+    This loss function enhances the boundary distinction between segmented regions, improving model accuracy on the edges.
+    It adjusts the loss based on the proximity to the boundary regions, effectively giving more importance to getting the boundaries right.
+
+    Examples
+    --------
+    >>> y_true = tf.constant([[[0, 1, 0], [0, 0, 1]]], dtype=tf.float32)
+    >>> y_pred = tf.constant([[[0.1, 0.9, 0.1], [0.1, 0.8, 0.1]]], dtype=tf.float32)
+    >>> boundary_loss = BoundaryDoULoss(n_classes=3)
+    >>> print(boundary_loss(y_true, y_pred).numpy())
+    """
+
+    def __init__(self, n_classes=1, name="boundary_dou_loss", **kwargs):
+        
+          super().__init__(
+            fn=boundary_dou_loss,
+            name=name,
+            n_classes=n_classes,
+            # name=name,
+            # mode=mode,
+            # gamma=gamma,
+            # alpha=alpha,
+            # loss_weight=loss_weight,
+            # axis=axis,
+            # const=const,
+            **kwargs,
+        )
+
+
+        #super(BoundaryDoULoss, self).__init__(fn=lambda y_true, y_pred: boundary_dou_loss(y_true, y_pred, n_classes), name=name, **kwargs)
+
+
 # ========================= #
 # Losses dictionary
 
