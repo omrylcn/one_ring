@@ -96,7 +96,8 @@ class DeepLabPooling(Layer):
         self.kernel_size = kernel_size
         self.activation_name = activation_name
         self.use_bias = use_bias
-
+        self.upsampling_size = None
+        
         self.pooling = GlobalAveragePooling2D()
         self.point_conv = DeepLabConv(self.n_filter, self.kernel_size, self.use_bias, self.activation_name)
 
@@ -104,7 +105,9 @@ class DeepLabPooling(Layer):
         x = self.pooling(inputs)
         x = Reshape(target_shape=(1, 1, x.shape[-1]))(x)
         x = self.point_conv(x, training=training)
-        x = UpSampling2D(size=inputs.shape[1:3], interpolation="bilinear")(x)
+        if self.upsampling_size is None:
+            self.upsampling_size = inputs.shape[1:3]
+        x = UpSampling2D(size=self.upsampling_size, interpolation="bilinear")(x)
         return x
 
     def get_config(self):
