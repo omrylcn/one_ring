@@ -12,6 +12,7 @@ dataset/**
 dataset/camvid
 dataset/road
 dataset/test_data
+models
 
 tests/__pycache__
 build
