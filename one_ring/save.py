@@ -10,6 +10,8 @@ from one_ring.config import ONNX_OPSET, META_DATA_NAME, ONNX_NAME, PROCESSORS_NA
 from one_ring.deploy import save_model_as_onnx
 from one_ring.logger import Logger
 
+
+
 class ModelSaver:
     """
     A utility class for saving and loading machine learning models, their metadata,
@@ -66,11 +68,11 @@ class ModelSaver:
         self._save_metadata(meta_data_path, meta_data_name, additional_metadata)
         self.logger.info(f"Saved metadata to {meta_data_path}")
 
-        # Save processors
-        processors_path = os.path.join(path, "processors")
-        os.makedirs(processors_path, exist_ok=True)
-        self._save_processors(processors_path, processors_name)
-        self.logger.info(f"Saved processors to {processors_path}")
+        # # Save processors
+        # processors_path = os.path.join(path, "processors")
+        # os.makedirs(processors_path, exist_ok=True)
+        # self._save_processors(processors_path, processors_name)
+        # self.logger.info(f"Saved processors to {processors_path}")
 
         # Save ONNX model if configured
         if self.config.get("deploy_onnx", True):
@@ -114,10 +116,10 @@ class ModelSaver:
         loaded_data['metadata'] = self._load_metadata(meta_data_path)
         self.logger.info(f"Loaded metadata from {meta_data_path}")
 
-        # Load processors
-        processors_path = os.path.join(path, "processors", PROCESSORS_NAME)
-        loaded_data['processors'] = self._load_processors(processors_path)
-        self.logger.info(f"Loaded processors from {processors_path}")
+        # # Load processors
+        # processors_path = os.path.join(path, "processors", PROCESSORS_NAME)
+        # loaded_data['processors'] = self._load_processors(processors_path)
+        # self.logger.info(f"Loaded processors from {processors_path}")
 
         # Load dataset information
         dataset_info_path = os.path.join(path, "dataset_info.json")
