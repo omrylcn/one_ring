@@ -13,7 +13,7 @@ import pickle
 import tf2onnx
 import time
 from tqdm.auto import tqdm
-from typing import Union, Optional, List, Dict,Tuple
+from typing import Union, Optional, List, Dict, Tuple
 from omegaconf import DictConfig, ListConfig
 
 import tensorflow as tf
@@ -62,7 +62,7 @@ class Trainer:
         loss: Optional[Loss] = None,
         metrics: Optional[List[Metric]] = None,
         callbacks: Optional[List[Callback]] = None,
-        tracing_object: Optional[Dict] = None,
+        save_object: Optional[Dict] = None,
     ) -> None:
         """
         Initialize the Trainer with model, data, and training configurations.
@@ -85,7 +85,7 @@ class Trainer:
             List of metrics to evaluate during training.
         callbacks : Optional[List[Callback]]
             List of callbacks for the training process.
-        tracing_object : Optional[Dict]
+        save_object : Optional[Dict]
             Dictionary containing tracing objects (e.g., MLflow).
         """
         self.logger = Logger("one_ring", log_file="trainer_log.log")
@@ -94,16 +94,16 @@ class Trainer:
         self.model = model
         self.train_data = train_data
         self.val_data = val_data
-        self.tracing_object = tracing_object
-        
+        self.save_object = save_object
+
         self._setup_training_components(optimizer, loss, metrics, callbacks)
         self.saver = ModelSaver(model=self.model, config=self.config, processors=None)
-        
+
         self.history = {"loss": [], "val_loss": [], "metrics": {}, "val_metrics": {}, "epoch_time": []}
         self.total_epoch = 0
         self.uuid = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         self.best_model = None
-        self.best_performance = float('inf')
+        self.best_performance = float("inf")
 
     def _setup_training_components(self, optimizer, loss, metrics, callbacks):
         """Set up optimizer, loss, metrics, and callbacks for training."""
@@ -114,7 +114,7 @@ class Trainer:
 
     def _create_optimizer(self, optimizer):
         """Create or validate the optimizer."""
-        if isinstance(optimizer,Optimizer):
+        if isinstance(optimizer, Optimizer):
             return optimizer
         optimizer_config = self.train_config.get("optimizer", {})
         optimizer_name = optimizer_config.get("name")
@@ -141,10 +141,24 @@ class Trainer:
         config_callbacks = get_callbacks(self.config.callbacks)
         return (callbacks or []) + list(config_callbacks.values())
 
-
     def _to_serializable(self, obj: any) -> any:
         """Convert a TensorFlow object to a JSON-serializable format."""
-        if isinstance(obj, (np.int_, np.intc, np.intp, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64)):
+        if isinstance(
+            obj,
+            (
+                np.int_,
+                np.intc,
+                np.intp,
+                np.int8,
+                np.int16,
+                np.int32,
+                np.int64,
+                np.uint8,
+                np.uint16,
+                np.uint32,
+                np.uint64,
+            ),
+        ):
             return int(obj)
         elif isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
             return float(obj)
@@ -160,7 +174,7 @@ class Trainer:
             return [self._to_serializable(value) for value in obj]
         elif isinstance(obj, (str, int, float, bool, type(None))):
             return obj
-        elif hasattr(obj, '__dict__'):
+        elif hasattr(obj, "__dict__"):
             return self._to_serializable(obj.__dict__)
         else:
             return str(obj)
@@ -171,35 +185,41 @@ class Trainer:
             "model": {
                 "name": self.model.name,
                 "layers": [layer.name for layer in self.model.layers],
-                "trainable_params": int(self.model.count_params())
+                "trainable_params": int(self.model.count_params()),
             },
             "optimizer": {
                 "name": self.optimizer.__class__.__name__,
-                "config": self._to_serializable(self.optimizer.get_config())
+                "config": self._to_serializable(self.optimizer.get_config()),
             },
             "loss": {
                 "name": self.loss.__class__.__name__,
-                "config": self._to_serializable(self.loss.get_config() if hasattr(self.loss, 'get_config') else {})
+                "config": self._to_serializable(self.loss.get_config() if hasattr(self.loss, "get_config") else {}),
             },
-            "metrics": [{"name": metric.__class__.__name__, "config": self._to_serializable(metric.get_config())} for metric in self.metrics],
+            "metrics": [
+                {"name": metric.__class__.__name__, "config": self._to_serializable(metric.get_config())}
+                for metric in self.metrics
+            ],
             "training": {
                 "total_epochs": self.total_epoch,
                 "best_performance": float(self.best_performance),
                 "training_started": self.uuid,
-                "training_completed": datetime.datetime.now().isoformat()
+                "training_completed": datetime.datetime.now().isoformat(),
             },
-            "history":self.history
+            "history": self.history,
+            "transformer": {
+                "val": self.save_object["transformer"].get("val", None),
+                "train": self.save_object["transformer"].get("train", None),
+            },
         }
         return metadata
 
-    def compile(self):
-        self.uuid = str(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+    # def compile(self):
+    #     self.uuid = str(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
 
-        self.is_first = True
-        self.model.compile(optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
-        self.logger.info(message="Model is completed")
+    #     self.is_first = True
+    #     self.model.compile(optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
+    #     self.logger.info(message="Model is completed")
 
- 
     @tf.function
     def train_step(self, x: tf.Tensor, y: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
         """
@@ -225,13 +245,13 @@ class Trainer:
         self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
         self._update_metrics(y, y_pred)
         return loss, y_pred
-    
+
     def _update_metrics(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> None:
         """Update all metrics."""
         for metric in self.metrics:
             metric.update_state(y_true, y_pred)
 
-    def fit(self, epochs: int = None, verbose: int = 1,finalize:bool=False) -> Dict[str, List]:
+    def fit(self, epochs: int = None, verbose: int = 1, finalize: bool = False) -> Dict[str, List]:
         """
         Train the model for a specified number of epochs.
 
@@ -248,93 +268,87 @@ class Trainer:
             Training history containing loss, metric values, and epoch times.
         """
         self._initialize_training(epochs)
-        
+
         epoch_iterator = range(self.start_epoch, self.finish_epoch)
-    
-        
+
         for epoch in epoch_iterator:
             epoch_start_time = time.time()
             self._train_epoch(epoch, verbose)
             if self.val_data:
                 self._validate_epoch(epoch, verbose)
-            
+
             epoch_end_time = time.time()
             epoch_duration = epoch_end_time - epoch_start_time
             self.history["epoch_time"].append(epoch_duration)
-            
+
             self._log_epoch_results(epoch, verbose, epoch_duration)
             self._check_early_stopping()
             self._reset_metrics()
 
         if finalize:
             self.finalize_training()
-        
-        return self.history
 
-    
+        return self.history
 
     def _initialize_training(self, epochs):
         """Initialize training parameters and MLflow."""
         if self.total_epoch == 0:
             self._initialize_mlflow()
-        
+
         self.total_epoch += epochs or self.train_config.epochs
         self.start_epoch = self.total_epoch - (epochs or self.train_config.epochs) + 1
         self.finish_epoch = self.total_epoch + 1
 
-
     def _train_epoch(self, epoch: int, verbose: int) -> None:
         """Train for one epoch."""
         epoch_loss = tf.keras.metrics.Mean()
-        
+
         train_iterator = self.train_data
         if verbose == 1:
             total_steps = self.train_data.cardinality().numpy()
             if total_steps == tf.data.UNKNOWN_CARDINALITY:
                 total_steps = None  # tqdm will show ? instead of total steps
             train_iterator = tqdm(self.train_data, total=total_steps, desc=f"Epoch {epoch}", leave=False)
-        
+
         for x, y in train_iterator:
             loss, _ = self.train_step(x, y)
             epoch_loss.update_state(loss)
-            
+
             if verbose == 1:
                 train_iterator.set_postfix({"batch_loss": f"{loss.numpy():.4f}"})
-        
+
         train_loss = epoch_loss.result().numpy().astype(float)
         train_metrics = {metric.name: metric.result().numpy().astype(float) for metric in self.metrics}
         self._add_history("train", train_loss, train_metrics)
 
         self._reset_metrics()
 
-
     def _validate_epoch(self, epoch: int, verbose: int) -> None:
         """Validate the model after an epoch."""
         val_loss, val_metrics = self.evaluate(self.val_data)
-        self._update_best_model(epoch,val_loss)
+        self._update_best_model(epoch, val_loss)
         self._add_history("val", val_loss, val_metrics)
         self._reset_metrics()
-
 
     def _log_epoch_results(self, epoch: int, verbose: int, epoch_duration: float) -> None:
         """Log the results of an epoch."""
         if verbose > 0:
             train_results = self.history["metrics"]
             val_results = self.history["val_metrics"]
-            
-            log_message = (f"Epoch {epoch}/{self.total_epoch} - {epoch_duration:.2f}s - "
-                           f"loss: {self.history['loss'][-1]:.4f}")
-            
+
+            log_message = (
+                f"Epoch {epoch}/{self.total_epoch} - {epoch_duration:.2f}s - " f"loss: {self.history['loss'][-1]:.4f}"
+            )
+
             for metric_name, metric_values in train_results.items():
                 log_message += f" - {metric_name}: {metric_values[-1]:.4f}"
-            
+
             if self.val_data:
                 log_message += f" - val_loss: {self.history['val_loss'][-1]:.4f}"
                 for metric_name, metric_values in val_results.items():
                     log_message += f" - val_{metric_name}: {metric_values[-1]:.4f}"
-            
-            self.logger.info(log_message)
 
+            self.logger.info(log_message)
 
     def evaluate(self, data: Dataset) -> Tuple[float, Dict[str, float]]:
         """
@@ -351,7 +365,7 @@ class Trainer:
             A tuple containing the average loss and a dictionary of metric results.
         """
         total_loss = tf.keras.metrics.Mean()
-        
+
         for x, y in data:
             y_pred = self.model(x, training=False)
             total_loss.update_state(self.loss(y, y_pred))
@@ -361,59 +375,51 @@ class Trainer:
         metric_results = {metric.name: metric.result().numpy().astype(float) for metric in self.metrics}
 
         return avg_loss, metric_results
-    
 
     def _check_early_stopping(self) -> None:
         """Check if early stopping criteria are met."""
         if self.train_config.get("early_stopping", False):
             patience = self.train_config.get("early_stopping_patience", 5)
             min_delta = self.train_config.get("early_stopping_min_delta", 0.001)
-            
+
             if len(self.history["val_loss"]) > patience:
                 recent_losses = self.history["val_loss"][-patience:]
-                if all(recent_losses[i] - recent_losses[i+1] < min_delta for i in range(len(recent_losses)-1)):
+                if all(recent_losses[i] - recent_losses[i + 1] < min_delta for i in range(len(recent_losses) - 1)):
                     self.logger.info("Early stopping criteria met. Halting training.")
                     self.finish_epoch = self.total_epoch + 1
-
 
     def _reset_metrics(self) -> None:
         """Reset all metrics."""
         for metric in self.metrics:
             metric.reset_states()
 
-
     def _initialize_mlflow(self) -> None:
         """Initialize MLflow tracking."""
         initialize_mlflow(self.train_config["experiment_name"], self.uuid)
         self._log_params()
 
-
     def _log_params(self) -> None:
         """Log configuration parameters to MLflow."""
         log_params(self.config, log_part=["train", "data", "model", "callbacks"])
 
-
-    def _update_best_model(self,epoch: int, val_loss: float) -> None:
+    def _update_best_model(self, epoch: int, val_loss: float) -> None:
         """Update the best model if current performance is better."""
         if val_loss < self.best_performance:
             self.best_performance = val_loss
             self.best_model = self.model.get_weights()
             self.logger.info(f"Epoch {epoch} - New best model found with validation loss: {val_loss:.4f}")
 
-
     def finalize_training(self) -> None:
         """Perform final operations after training."""
         if self.best_model is not None:
             self.model.set_weights(self.best_model)
             self.logger.info("Restored best model weights.")
-        
+
         self.save()
         self._log_final_results()
+        mlflow.end_run()
         self.logger.info("Finished model training")
-
-
-        #self.logger.info("Mode")
-
+        
 
     def _add_history(self, mode: str, loss: float, metrics: Dict[str, float]) -> None:
         """Add training or validation results to history."""
@@ -434,18 +440,11 @@ class Trainer:
         self.metadata = self.get_metadata()
 
         self.saver.save(
-            path=save_path,
-            train_ds=self.train_data,
-            val_ds=self.val_data,
-            additional_metadata=self.metadata
+            path=save_path, train_ds=self.train_data, val_ds=self.val_data, additional_metadata=self.metadata
         )
-        
+
         self.logger.info(f"Model and comprehensive metadata saved to {save_path}")
         self.save_path = save_path
-
-        # if self.tracing_object and 'mlflow' in self.tracing_object:
-        #     log_model(self.model, save_path)
-        #     self.logger.info("Model logged to MLflow")
 
     def load(self, path: str, setup_components: bool = False) -> None:
         """
@@ -455,35 +454,26 @@ class Trainer:
         -----------
         path : str
             The path to the directory where the model and associated data are saved.
-        
+
         setup_components : bool
             Recreate training components from config files
-        
+
         """
- 
+
         loaded_data = self.saver.load(path)
 
-        self.model = loaded_data['model']
-        self.loaded_metadata = loaded_data['metadata']
+        self.model = loaded_data["model"]
+        self.loaded_metadata = loaded_data["metadata"]
 
         if setup_components:
-            self._setup_training_components(None,None,None,None)
+            self._setup_training_components(None, None, None, None)
 
         self.logger.info(f"Model and associated data loaded from {path}")
-
-
 
     def _log_final_results(self) -> None:
         """Log final training results."""
         log_history(self.history)
-        #log_model(self.model, self.train_config.get("model_save_dir", "models"))
-
-    
-
-
-
-
-
+        # log_model(self.model, self.train_config.get("model_save_dir", "models"))
 
     # def _log_aug_params(self):
     #     prefix = "aug"
@@ -528,122 +518,7 @@ class Trainer:
 
     # initiliaze everything
 
-    # if not self._model._is_compiled or not continue_training:
-    #     self.compile_model()
-    #     self.fit_counter = 0
-    #     self.history = {}
-    #     initial_epoch = 0
-    #     self._initialize_tracing()
-    #     self._log_params()
-    #     self._log_aug_params()
-    #     self._log_object()
-    #     self.logger.info("Start training  ...")
-    # else:
-    #     self.logger.info("Continue training ...")
-    #     initial_epoch = self.trainer_config["epochs"] * self.fit_counter
-
-    # epochs = self.trainer_config["epochs"] * (self.fit_counter + 1)
-
-    # history = self._model.fit(
-    #     self.train_data,
-    #     epochs=epochs,
-    #     callbacks=self.callbacks,
-    #     validation_data=self.val_data,
-    #     initial_epoch=initial_epoch,
-    # )
-
-    # current_time = str(datetime.datetime.now())
-    # self.logger.info(f"Training ended at {current_time}. History saved with id {self.uuid}")
-    # self.fit_counter += 1
-
-    # self._log_history(history, initial_epoch=initial_epoch)
-    # self._update_history(history)
-
-    # if self.trainer_config["save_model"]:
-    #     path = self.trainer_config["save_model_path"]
-    #     self.save(path)
-
-    # def _update_history(self, history):
-    #     for key, value in history.history.items():
-    #         if key in self.history:
-    #             self.history[key].extend(value)
-    #         else:
-    #             self.history[key] = value
-
-    # # def evaluate(self) -> None:
-    # #     if self.val_data and self.model._is_compiled :
-    # #         self.model.evaluate(self.val_data)
-    # #     else:
-    # #         self.logger.error(message="Validation data is not provided")
-
-    # def save(self, path: str, root_dir="runs") -> None:
-    #     """
-    #     Saves the model to Tensorflow SavedModel and optionally to ONNX format. Also saves related metadata and preprocessor objects.
-
-    #     Parameters
-    #     ----------
-    #     path: str
-    #         Directory path to save model and related files.
-    #     meta_data_name: str, default: "meta_data.pkl"
-    #         Filename to save metadata.
-    #     onnx_name: str, default: "model.onnx"
-    #         Filename to save model in ONNX format.
-    #     """
-
-    #     path = os.path.join(root_dir, path, self.uuid)
-    #     # print("PATH", path)
-    #     os.makedirs(path, exist_ok=True)
-    #     self.save_path = path
-    #     self.saver.save(path, train_ds=None, val_ds=None)
-
-    # def load(self, path: str = None, compile: bool = True, objects: dict = None) -> None:
-    #     """
-    #     Load a model from a TensorFlow SavedModel format.
-
-    #     Parameters
-    #     ----------
-    #     path : str, optional
-    #         The path to the directory where the model is saved. If not specified, `self.save_path` is used.
-    #     compile : bool, default True
-    #         Whether to compile the model after loading.
-    #     objects : dict, optional
-    #         A dictionary of custom objects necessary for loading the model, such as custom layers.
-    #     """
-
-    #     path = path or self.save_path
-
-    #     if not os.path.isdir(path):
-    #         self.logger.error("Path is not a valid directory.")
-    #         raise ValueError("Path is not a valid directory.")
-
-    #     try:
-    #         self.model = self.saver.load(path, compile=compile, custom_objects=objects)
-    #         self.logger.info(f"Model loaded successfully from '{path}'.")
-    #     except Exception as e:
-    #         self.logger.error(f"Failed to load the model from '{path}'. Error: {e}")
-    #         raise
-
-    # def get_custom_objects(self):
-    #     """
-    #     Get custom objects from the model.
-
-    #     Returns
-    #     -------
-    #     dict
-    #         A dictionary of custom objects used in the model.
-    #     """
-
-    #     custom_objects = {}
-    #     if self.model._is_compiled:
-    #         for m in self.metrics:
-    #             if hasattr(m, "one_ring_type"):
-    #                 custom_objects[m.__class__.__name__] = m.__class__
-
-    #         for l in self.loss:
-    #             if hasattr(l, "one_ring_type"):
-    #                 custom_objects[l.__class__.__name__] = l.__class__
-
-    #     return custom_objects
+   
 
     # def end(self, log_model: bool = False) -> None:
     #     if log_model:

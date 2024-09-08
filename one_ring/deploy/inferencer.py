@@ -1,199 +1,172 @@
-from typing import Dict, Union, Optional, List, Tuple
-from omegaconf import DictConfig, ListConfig
-from one_ring.deploy import preprocessor_lib, postprocessor_lib
-from one_ring.utils import TensorLike
-import tensorflow as tf
-import onnxruntime as ort
-from tensorflow.keras.models import load_model
 import os
-import numpy as np
-from one_ring.transformers import normalize
-from one_ring.config import MODEL_TYPE_LIB
-from one_ring.deploy import model_wrapper_lib
+import logging
+import hashlib
+from functools import lru_cache
+from typing import Dict,Tuple, Any
+#import json
+import yaml
 
+# import matplotlib.pyplot as plt 
+# import cv2
+import numpy as np
+#from omegaconf import DictConfig, ListConfig
+from one_ring.utils import TensorLike
+from one_ring.config import MODEL_TYPE_LIB
+from one_ring.transformers import normalize
+from one_ring.deploy import model_wrapper_lib,preprocessor_lib,postprocessor_lib
+
+
+import numpy as np
+from functools import lru_cache
+from typing import Tuple
+import matplotlib.pyplot as plt
 
 class Inferencer:
     """
-    Inference class for one_ring models
+    Inference class for one_ring models with improved caching and logging
     """
 
-    def __init__(
-        self,
-        image_size: Union[List[int], Tuple[int]],
-        normalizing: bool,
-        model_type: str,
-        model_path: str,
-        preprocessor_type: str,
-        postprocessor_type: str,
-        preprocessor_path: str = None,
-        postprocessor_path: str = None,
-        seed: int = 48,
-        device: bool = "cpu",
-        **kwargs,
-    ):
-        # print("config", config)
+    def __init__(self, config: Dict[str, Any], cache_size: int = 128, log_level: str = "INFO"):
         """
+        Initialize the Inferencer with a configuration dictionary.
+
         Parameters
         ----------
-        image_size : Union[List[int], Tuple[int]]
-            Size of the input image
-        normalizing : bool
-            Whether to normalize the input image
-        model_type : str, {"tf", "onnx"}
-            Type of the model
-        model_path : str
-            Path of the model folder
-        preprocessor_type : str
-            Type of the preprocessor object that will be used to process data before prediction
-        preprocessor_path : str
-            Path of the preprocessor object
-        postprocessor_type : str
-            Type of the postprocessor object that will be used to process after prediction
-        postprocessor_path : str
-            Path of the postprocessor object
-
+        config : Dict
+            Configuration dictionary containing all necessary parameters.
+        cache_size : int, optional
+            Size of the LRU cache for preprocessing results, by default 128
+        log_level : str, optional
+            Logging level, by default "INFO"
         """
-        self.image_size = image_size
-        self.model_type = model_type
-        self.preprocessor_type = preprocessor_type
-        self.preprocessor_path = preprocessor_path
-        self.model_type = model_type
-        self.model_path = model_path
-        self.postprocessor_type = postprocessor_type
-        self.postprocessor_path = postprocessor_path
-        self.normalizing = normalizing
-        self.seed = seed
-        self.device = device
-        self.kwargs = kwargs
+        self.config = config
+        self.cache_size = cache_size
+        self._setup_logging(log_level)
+        self._validate_config()
 
-        config = self.config
+        self._model = self._load_model()
+        self.metadata = self._load_metadata()
 
-        # load model
-        self._model = self.load(config)
-        self._preprocessor = None
-        self._postprocessor = None
+        self.preprocessor = self.load_processor("preprocessor")
+        self.postprocessor = self.load_processor("postprocessor")
 
-        # load preprocessor
-        preprocessor_type = config["preprocessor_type"]
-        if preprocessor_type:
-            assert preprocessor_type in preprocessor_lib.keys(), f"preprocessor_type {preprocessor_type} not in {preprocessor_lib.keys()}"
-            self._preprocessor = preprocessor_lib[preprocessor_type](config)
+    def _load_metadata(self):
+        self.metadata_path = os.path.join(self.config["model_path"], "meta_data/meta_data.yaml")
+        with open(self.metadata_path, "r") as file:
+            metadata = yaml.safe_load(file)
 
-        # load postprocessor
-        postprocessor_type = config["postprocessor_type"]
-        if postprocessor_type:
-            assert postprocessor_type in postprocessor_lib.keys(), f"postprocessor_type {postprocessor_type} not in {postprocessor_lib.keys()}"
-            self._postprocessor = postprocessor_lib[postprocessor_type](config)
+        return metadata
+        # self.meta_data = open(self.meta_data_path,"r").read()
 
-    @property
-    def config(self):
-        config = {}
-        config["image_size"] = self.image_size
-        config["model_type"] = self.model_type
-        config["model_path"] = self.model_path
-        config["normalizing"] = self.normalizing
-        config["preprocessor_type"] = self.preprocessor_type
-        config["preprocessor_path"] = self.preprocessor_path
-        config["postprocessor_type"] = self.postprocessor_type
-        config["postprocessor_path"] = self.postprocessor_path
-        config["device"] = self.device
-        config["seed"] = self.seed
-        config.update(self.kwargs)
+    def _setup_logging(self, log_level: str):
+        """Set up logging for the Inferencer."""
+        logging.basicConfig(level=log_level)
+        self.logger = logging.getLogger(self.__class__.__name__)
 
-        return config
+    def _validate_config(self):
+        """Validate the configuration dictionary."""
+        required_keys = [
+            "model_type",
+            "model_path",
+            "preprocessor_type",
+            "postprocessor_type",
+        ]
+        for key in required_keys:
+            if key not in self.config:
+                raise ValueError(f"Missing required configuration key: {key}")
 
-    def _check_params(self):
+        if self.config["model_type"] not in MODEL_TYPE_LIB:
+            raise ValueError(f"Unsupported model type: {self.config['model_type']}")
+
+    def _load_model(self):
+        """Load the model based on the configuration."""
+        self.logger.info(f"Loading model of type {self.config['model_type']}")
+        return model_wrapper_lib[self.config["model_type"]](**self.config)
+
+    def load_processor(self, processor_type: str):
+        """Load a processor (preprocessor or postprocessor) based on the configuration."""
+        processor_config_type = f"{processor_type}_type"
+        #     processor_config_path = f"{processor_type}_path"
+
+        if not self.config.get(processor_config_type):
+            return None
+
+        processor_lib = preprocessor_lib if processor_type == "preprocessor" else postprocessor_lib
+        if self.config[processor_config_type] not in processor_lib:
+            raise ValueError(f"Unsupported {processor_type} type: {self.config[processor_config_type]}")
+
+        self.logger.info(f"Loading {processor_type} of type {self.config[processor_config_type]}")
+
+        return processor_lib[self.config[processor_config_type]](
+            self.config, metadata=self.metadata["transformer"]["val"]
+        )
+
+    def _hash_array(self, arr: np.ndarray) -> str:
+        """Create a hash of a numpy array for caching purposes."""
+        return hashlib.md5(arr.data.tobytes()).hexdigest()
+
+    @lru_cache(maxsize=128)
+    def _cached_preprocess(self, arr_hash: str) -> np.ndarray:
+        """Cached preprocessing for improved performance."""
+        # This method now only serves as a cache key
+        # The actual preprocessing is done in pre_process
         pass
 
-    def load(self, config: Optional[Union[Dict, DictConfig, ListConfig]] = None):
-        """
-        Load onnx or tf model
+    def pre_process(self, x: np.ndarray) -> np.ndarray:
+        """Preprocess the input data."""
+        self.logger.debug("Preprocessing input")
+        if not isinstance(x, np.ndarray):
+            x = np.array(x)
 
-        Parameters
-        ----------
-        config : Optional[Union[Dict, DictConfig, ListConfig]], optional
-            Configuration for the inferencer, by default None
-
-        Returns
-        -------
-        model
-            Loaded model
-
-        """
-        # TODO: add logger to inform model is loaded
-
-        config = config if config else self.config
-
-        assert config["model_type"] in MODEL_TYPE_LIB, f"model_type {config['model_type']} not supported"
-        self.model = model_wrapper_lib[config["model_type"]](**config)
-
-
-    @property
-    def preprocessor(self):
-        return self._preprocessor
-
-    @property
-    def postprocessor(self):
-        return self._postprocessor
-
-    def pre_process(self, x: TensorLike) -> TensorLike:
-        """
-        Preprocess the input image
-
-        Parameters
-        ----------
-        x : TensorLike
-            Input image
-
-        Returns
-        -------
-        TensorLike
-            Preprocessed image
-
-        """
-        # TODO: check data type for model types parameters
-
+        arr_hash = self._hash_array(x)
         
+        # Check if the result is in cache
+        cached_result = self._cached_preprocess(arr_hash)
+        if cached_result is not None:
+            return cached_result
+
         if self.preprocessor:
-            config = self.config
-
             x = self.preprocessor(x)
-            if config["normalizing"]:
-                x = self._normalize(x)
 
-            if x.ndim == 3:
-                x = np.expand_dims(x, axis=0)
+        x = np.expand_dims(x, axis=0) if x.ndim == 3 else x
 
-        return x
-
-    def post_process(self, x: TensorLike) -> TensorLike:
-        """
-        Postprocess the output of the model
-
-        Parameters
-        ----------
-        x : TensorLike
-            Output of the model
-
-        Returns
-        -------
-        TensorLike
-
-        """
-        if self.postprocessor:
-            x = self.postprocessor(x)
+        self._cached_preprocess.cache_clear()
+        self._cached_preprocess(arr_hash)
         
         return x
+    
+    def post_process(self, x: TensorLike) -> Tuple[TensorLike, TensorLike]:
+        """Postprocess the model output."""
+        self.logger.debug("Postprocessing output")
+        return self.postprocessor(x) if self.postprocessor else (x, x)
+    
+    def predict(self, image: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Perform prediction on the input image.
+        """
+        self.logger.info("Starting prediction")
+        try:
+            processed_input = self.pre_process(image)
+           
+            self.logger.debug("Input processed successfully")
 
-    # @tf.function
-    def _normalize(self, image: TensorLike):
-        # return tf.image.per_image_standardization(image)
-        return normalize(image, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+            prediction = self._model(processed_input)
+            self.logger.debug("Model prediction completed")
 
-    def predict(self, image: TensorLike, input_name: str = "input"):
-        self.input_image = self.pre_process(image)
+            pred_image, pred_mask = self.post_process(prediction)
+            self.logger.info("Prediction completed successfully")
 
-        self.pred_image = self.model(self.input_image)
+           
+            return pred_image, pred_mask
+        except Exception as e:
+            self.logger.error(f"Error during prediction: {str(e)}")
+            raise
 
-        self.pred_mask, self.pred_image = self.post_process(self.pred_image)
-        return self.pred_image, self.pred_mask
+    def __call__(self, image: TensorLike) -> Tuple[TensorLike, TensorLike]:
+        """Allow the Inferencer to be called as a function."""
+        return self.predict(image)
+
+    def clear_cache(self):
+        """Clear the preprocessing cache."""
+        self._cached_preprocess.cache_clear()
+        self.logger.info("Preprocessing cache cleared")

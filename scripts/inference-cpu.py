@@ -1,6 +1,6 @@
 import sys
 sys.path.append("../")
-from tf_seg.deploy.inferencer import Inferencer
+from one_ring.deploy.inferencer import Inferencer
 import matplotlib.pyplot as plt
 
 import time
