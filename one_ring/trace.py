@@ -66,15 +66,28 @@ def log_history(history, initial_epoch=0):  # log_best=None):
         Best metrics of training
     """
 
-    history_object = history.history if hasattr(history, "history") else history
+    #history_object = history.history if hasattr(history, "history") else history
 
-    for key in history_object.keys():
-        epoch = initial_epoch
-        for i in range(len(history_object[key])):
-            epoch += 1
-            mlflow.log_metric(key, float(history_object[key][i]), step=epoch)
+    for i in range(len(history["epoch_time"])):
+        mlflow.log_metric("epoch_time",history["epoch_time"][i],i+1) 
+        mlflow.log_metric("loss",history["loss"][i],i+1)
+        mlflow.log_metric("val_loss",history["val_loss"][i],i+1)
 
-        # # last element is max value
+        for mv in history["metrics"].keys():
+            mlflow.log_metric(f"val_{mv}",history["val_metrics"][mv][i],i+1)
+            mlflow.log_metric(f"{mv}",history["metrics"][mv][i],i+1)
+        
+
+    
+    
+    # for key in history.keys():
+    #     epoch = initial_epoch
+    #     for i in range(len(history[key])):
+    #         epoch += 1
+    #         print(key)
+    #         mlflow.log_metric(key, float(history[key][i]), step=epoch)
+
+    #     # # last element is max value
         # if log_best:
         #     mlflow.log_metric("best_" + key, float(log_best[key]))
 
