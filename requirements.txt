@@ -1,9 +1,0 @@
-albumentations
-datasets
-matplotlib
-numpy
-omegaconf
-onnxruntime
-tensorflow
-tf2onnx
-transformers
