@@ -4,7 +4,7 @@ train:
   experiment_name: development
   save_model_path: development
   save_model: false
-  epochs: 4
+  epochs: 100
   optimizer: { name: adam, params: {learning_rate: 0.001} }
   loss:  dice_loss  #[[dice_loss] #binary_crossentropy
   metrics: [dice_score]
@@ -12,14 +12,14 @@ train:
   deploy_onnx: false
   lr_scheduler: 
     "name": cosine_decay_with_warmup  #, cosine_decay_restarts,cosine_decay_no_warmup
-    "params": {"min_lr": 0.00005,"max_lr": 0.005, "warmup_epochs": 2}
+    "params": {"min_lr": 0.00005,"max_lr": 0.005, "warmup_epochs": 5}
     
 data:
   base: null
-  name: spinal_sample_v3
+  name: vessel
   function_name: custom # it is used camvid dataset to generate binary data
-  path: data/spinal_sample_v3 # "ignis/data/segmentation/data_v2",
-  classes: [spinal]
+  path: data/vessel # "ignis/data/segmentation/data_v2",
+  classes: [vessel]
   palette: [[255, 255, 255]]
   normalizing: false
   one_hot_encoding: true # target output shape
@@ -34,70 +34,70 @@ augmentation:
   aug_type: albumentations # only albumentations
   load_style: file # module
   train: 
-    __version__: 1.3.1
-    transform:
-      __class_fullname__: Compose
-      additional_targets: {}
-      bbox_params: null
-      is_check_shapes: true
-      keypoint_params: null
-      p: 1.0
-      transforms:
-      - __class_fullname__: Resize
-        always_apply: false
-        height: 224
-        interpolation: 1
-        p: 1
-        width: 224
-      - __class_fullname__: HorizontalFlip
-        always_apply: false
-        p: 0.05
-      - __class_fullname__: VerticalFlip
-        always_apply: false
-        p: 0.05
-      - __class_fullname__: Rotate
-        always_apply: false
-        border_mode: 4
-        crop_border: false
-        interpolation: 1
-        limit:
-        - -10
-        - 10
-        mask_value: null
-        p: 0.05
-        rotate_method: largest_box
-        value: null
-      - __class_fullname__: RandomSizedCrop
-        always_apply: false
-        height: 224
-        interpolation: 1
-        min_max_height:
-        - 180
-        - 224
-        p: 0.05
-        w2h_ratio: 1.0
-        width: 224
+    # __version__: 1.3.1
+    # transform:
+    #   __class_fullname__: Compose
+    #   additional_targets: {}
+    #   bbox_params: null
+    #   is_check_shapes: true
+    #   keypoint_params: null
+    #   p: 1.0
+    #   transforms:
+    #   - __class_fullname__: Resize
+    #     always_apply: false
+    #     height: 224
+    #     interpolation: 1
+    #     p: 1
+    #     width: 224
+    #   - __class_fullname__: HorizontalFlip
+    #     always_apply: false
+    #     p: 0.05
+    #   - __class_fullname__: VerticalFlip
+    #     always_apply: false
+    #     p: 0.05
+    #   - __class_fullname__: Rotate
+    #     always_apply: false
+    #     border_mode: 4
+    #     crop_border: false
+    #     interpolation: 1
+    #     limit:
+    #     - -10
+    #     - 10
+    #     mask_value: null
+    #     p: 0.05
+    #     rotate_method: largest_box
+    #     value: null
+    #   - __class_fullname__: RandomSizedCrop
+    #     always_apply: false
+    #     height: 224
+    #     interpolation: 1
+    #     min_max_height:
+    #     - 180
+    #     - 224
+    #     p: 0.05
+    #     w2h_ratio: 1.0
+    #     width: 224
   test:
-    __version__: 1.3.1
-    transform:
-      __class_fullname__: Compose
-      additional_targets: {}
-      bbox_params: null
-      is_check_shapes: true
-      keypoint_params: null
-      p: 1.0
-      transforms:
-      - __class_fullname__: Resize
-        always_apply: false
-        height: 224
-        interpolation: 1
-        p: 1
-        width: 224
+    # __version__: 1.3.1
+    # transform:
+    #   __class_fullname__: Compose
+    #   additional_targets: {}
+    #   bbox_params: null
+    #   is_check_shapes: true
+    #   keypoint_params: null
+    #   p: 1.0
+    #   transforms:
+    #   - __class_fullname__: Resize
+    #     always_apply: false
+    #     height: 224
+    #     interpolation: 1
+    #     p: 1
+    #     width: 224
 
 model:
   base: null
   name: DeepLabV3Plus
-  n_filters: 8 #[32, 48, 64, 96, 128] # [16,32,64,128,256] #[12,32,64,96,128] #[12, 24, 32, 48, 96] #[32,48,64,128,256] #[32, 64, 128,256] #[32,64,128,256,512]
+  n_filters: 32 #[32, 48, 64, 96, 128] # [16,32,64,128,256] #[12,32,64,96,128] #[12, 24, 32, 48, 96] #[32,48,64,128,256] #[32, 64, 128,256] #[32,64,128,256,512]
   input_shape: [224, 224, 3]
   final_activation: sigmoid
   activation: relu
