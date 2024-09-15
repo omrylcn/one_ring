@@ -4,6 +4,15 @@
 one_ring/__pycache__
 one_ring/**/__pycache__
 board_logs
+examples/binary_segmentation_camvid.ipynb examples/inference.ipynb
+config/example.yaml
+config/multi_class.yaml
+config/spinal_cord.yaml
+config/unet.yaml
+support_runner.ipynb
+one_ring_runner.ipynb
+one_ring_runner_updated.ipynb
+
 
 data
 appendix
